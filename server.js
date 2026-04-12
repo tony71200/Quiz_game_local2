@@ -137,6 +137,27 @@ function shuffleAnswers(question) {
   };
 }
 
+function getConfiguredSlideImage(key, fallback) {
+  const configured = questionsData[key];
+  return typeof configured === 'string' && configured.trim() ? configured : fallback;
+}
+
+function getSlideImages() {
+  return {
+    main_slide: getConfiguredSlideImage('main_slide', '/assets/slides/main_slide.jpg'),
+    summary_slide: getConfiguredSlideImage('summary_slide', '/assets/slides/summary_slide.jpg'),
+    thank_slide: getConfiguredSlideImage('thank_slide', '/assets/slides/thank_slide.svg')
+  };
+}
+
+function getPhaseSlideImage(phase) {
+  const slides = getSlideImages();
+  if (phase === 'main_slide') return slides.main_slide;
+  if (phase === 'summary') return slides.summary_slide;
+  if (phase === 'thankyou') return slides.thank_slide;
+  return null;
+}
+
 // ── Scoring ─────────────────────────────────────────────────
 function calculateScore(timeLeft, totalTime) {
   // SKILL.md formula: score = 40 + 60 * (time_left / total_time)
@@ -179,22 +200,28 @@ function teamPublicData(t) {
 }
 
 function broadcastGameState(extra = {}) {
-  const statePayload = {
+  io.emit('game_state', buildGameStatePayload(extra));
+}
+
+function buildGameStatePayload(extra = {}) {
+  const phaseSlideImage = getPhaseSlideImage(gameState.phase);
+  return {
     phase: gameState.phase,
     currentRound: gameState.currentRound,
     currentQuestionIndex: gameState.currentQuestionIndex,
     roundConfig: config.rounds[gameState.currentRound],
     teams: gameState.teams.map(teamPublicData),
+    slideImages: getSlideImages(),
+    ...(phaseSlideImage ? { slideImage: phaseSlideImage } : {}),
     ...extra
   };
-  io.emit('game_state', statePayload);
 }
 
 // ── Game Flow Functions ─────────────────────────────────────
 
 function showMainSlide() {
   gameState.phase = 'main_slide';
-  broadcastGameState();
+  broadcastGameState({ slideImage: getConfiguredSlideImage('main_slide', '/assets/slides/main_slide.jpg') });
   saveState();
   console.log('[Phase] → MAIN_SLIDE');
 }
@@ -412,14 +439,17 @@ function showFinal() {
 function showSummary() {
   gameState.phase = 'summary';
   const rankedTeams = [...gameState.teams].sort((a, b) => b.score - a.score);
-  broadcastGameState({ rankedTeams: rankedTeams.map(teamPublicData) });
+  broadcastGameState({
+    rankedTeams: rankedTeams.map(teamPublicData),
+    slideImage: getConfiguredSlideImage('summary_slide', '/assets/slides/summary_slide.jpg')
+  });
   saveState();
   console.log('[Phase] → SUMMARY');
 }
 
 function showThankYou() {
   gameState.phase = 'thankyou';
-  broadcastGameState();
+  broadcastGameState({ slideImage: getConfiguredSlideImage('thank_slide', '/assets/slides/thank_slide.svg') });
   saveState();
   console.log('[Phase] → THANKYOU');
 }
@@ -480,9 +510,13 @@ io.on('connection', (socket) => {
     phase: gameState.phase,
     teams: gameState.teams.map(teamPublicData),
     config: config,
+    state: buildGameStatePayload(),
+    slideImages: getSlideImages(),
     lanIP: getLanIP(),
     port: PORT
   });
+
+  socket.emit('game_state', buildGameStatePayload());
 
   // ── Host Join ──
   socket.on('host_join', async () => {
@@ -504,7 +538,9 @@ io.on('connection', (socket) => {
       allIPs,
       port: PORT,
       teams: gameState.teams.map(teamPublicData),
-      config
+      config,
+      state: buildGameStatePayload(),
+      slideImages: getSlideImages()
     });
   });
 
