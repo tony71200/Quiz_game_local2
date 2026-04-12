@@ -1,0 +1,14 @@
+{
+  "phase": "main_slide",
+  "teams": [],
+  "currentRound": 0,
+  "currentQuestionIndex": 0,
+  "currentQuestion": null,
+  "shuffledAnswers": null,
+  "timeLeft": 0,
+  "totalTime": 0,
+  "paused": false,
+  "answersSubmitted": {},
+  "hostSocketId": "Dnd3tYZUfIxcdgDnAAAD",
+  "slideIndex": 0
+}

@@ -1,0 +1,16 @@
+{
+  "rounds": [
+    { "round": 1, "teamsCount": 4, "questions": 4, "timer": 30, "advanceCount": 2 },
+    { "round": 2, "teamsCount": 2, "questions": 2, "timer": 20, "advanceCount": 2 },
+    { "round": 3, "teamsCount": 2, "questions": 1, "timer": 15, "advanceCount": 1 }
+  ],
+  "scoring": {
+    "baseScore": 40,
+    "timeBonus": 60
+  },
+  "icons": ["🐉", "🦁", "🐺", "🦅", "🦊", "🐻", "🐯", "🦈", "🦉", "🔥"],
+  "teamColors": ["#FF4757", "#2ED573", "#1E90FF", "#FFA502"],
+  "slidesBetweenQuestions": true,
+  "maxTeams": 4,
+  "minTeamsToStart": 1
+}

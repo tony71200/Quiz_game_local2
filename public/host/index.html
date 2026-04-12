@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Game — Host Dashboard</title>
+  <meta name="description" content="Quiz Game Host Dashboard - Control panel for LAN quiz game">
+  <link rel="stylesheet" href="/shared/style-base.css">
+  <style>
+    .host-body { padding-bottom: 90px; }
+    .host-header { text-align: center; padding: 30px 24px 20px; }
+    .host-header h1 { font-size: 2.2rem; margin-bottom: 8px; }
+    .host-header .subtitle { color: var(--text-secondary); font-size: 1rem; }
+    .lobby-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; max-width: 1000px; margin: 0 auto; padding: 0 24px;
+    }
+    .lobby-left, .lobby-right { display: flex; flex-direction: column; gap: 16px; }
+    .team-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .team-slot {
+      padding: 20px; background: var(--bg-glass); border-radius: var(--radius-lg);
+      border: 2px dashed rgba(33,150,243,0.15); text-align: center;
+      min-height: 100px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; transition: all var(--transition-normal);
+    }
+    .team-slot.filled { border-style: solid; animation: slideInUp 0.5s ease backwards; }
+    .team-slot .slot-icon { font-size: 2rem; margin-bottom: 8px; }
+    .team-slot .slot-name { font-weight: 700; font-size: 1rem; }
+    .team-slot .slot-empty { color: var(--text-muted); font-size: 0.85rem; }
+    .question-header { text-align: center; margin-bottom: 20px; }
+    .question-text {
+      font-family: var(--font-display); font-size: 1.6rem; font-weight: 700;
+      text-align: center; max-width: 800px; margin: 20px auto; line-height: 1.4;
+    }
+    .host-content { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+    @media (max-width: 768px) {
+      .lobby-grid { grid-template-columns: 1fr; }
+      .question-text { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body class="host-body">
+  <!-- SVG Defs for timer gradient -->
+  <svg style="position:absolute;width:0;height:0;">
+    <defs>
+      <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#2196F3"/>
+        <stop offset="100%" style="stop-color:#00BCD4"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- ═══════ MAIN SLIDE (fullscreen, first screen) ═══════ -->
+  <div id="phase-main_slide" class="fullscreen-phase slide-fullscreen" onclick="advanceMainSlide()">
+    <div class="fs-content">
+      <img src="/assets/slides/main_slide.jpg" alt="Main Slide" onerror="this.outerHTML='<div class=\'slide-placeholder-fs\'>🖼️ Main Slide</div>'">
+    </div>
+    <button class="fs-next-btn" onclick="event.stopPropagation(); advanceMainSlide();">▶</button>
+  </div>
+
+  <!-- ═══════ INTER-QUESTION SLIDE (fullscreen) ═══════ -->
+  <div id="phase-slide" class="fullscreen-phase slide-fullscreen" onclick="advanceSlide()">
+    <div class="fs-content" id="slide-fs-content">
+      <div class="slide-placeholder-fs">🖼️</div>
+    </div>
+    <button class="fs-next-btn" onclick="event.stopPropagation(); advanceSlide();">→</button>
+  </div>
+
+  <!-- ═══════ SUMMARY SLIDE (fullscreen) ═══════ -->
+  <div id="phase-summary" class="fullscreen-phase slide-fullscreen" onclick="advanceSummary()">
+    <div class="fs-content">
+      <img src="/assets/slides/summary_slide.jpg" alt="Summary Slide" onerror="this.outerHTML='<div class=\'slide-placeholder-fs\'>🖼️ Summary Slide</div>'">
+    </div>
+    <button class="fs-next-btn" onclick="event.stopPropagation(); advanceSummary();">→</button>
+  </div>
+
+  <!-- ═══════ THANK YOU SLIDE (fullscreen) ═══════ -->
+  <div id="phase-thankyou" class="fullscreen-phase thankyou-slide" onclick="advanceThankYou()">
+    <div class="fs-content">
+      <div class="thankyou-emoji">🙏</div>
+      <div class="thankyou-title text-gradient">Cảm ơn!</div>
+      <div class="thankyou-subtitle">Cảm ơn tất cả các đội đã tham gia cuộc thi.<br>Hẹn gặp lại!</div>
+      <div class="main-slide-hint" style="bottom:30px;">Nhấn để quay về Lobby →</div>
+    </div>
+    <div id="confetti-container" class="confetti-container"></div>
+    <button class="fs-next-btn" onclick="event.stopPropagation(); advanceThankYou();">🔄</button>
+  </div>
+
+  <!-- ═══════ LOBBY PHASE ═══════ -->
+  <div id="phase-lobby" class="phase-container">
+    <div class="host-header">
+      <h1 class="text-gradient">🎮 Quiz Game</h1>
+      <p class="subtitle">Quét mã QR để tham gia · Chờ các đội kết nối</p>
+    </div>
+    <div class="lobby-grid">
+      <div class="lobby-left">
+        <div class="glass-card qr-container" id="qr-section">
+          <h3 style="margin-bottom:16px;">📱 Quét QR để tham gia</h3>
+          <img id="qr-image" alt="QR Code" style="display:none;">
+          <p id="qr-url" class="qr-url"></p>
+          <div style="margin-top:16px;width:100%;">
+            <label style="font-size:0.85rem;color:var(--text-secondary);">Chọn IP:</label>
+            <select id="ip-selector" class="ip-selector" style="margin-top:6px;width:100%;"></select>
+          </div>
+        </div>
+      </div>
+      <div class="lobby-right">
+        <div class="glass-card">
+          <h3 style="margin-bottom:16px;">👥 Các đội (<span id="team-count">0</span>/4)</h3>
+          <div id="team-slots" class="team-slots">
+            <div class="team-slot"><span class="slot-empty">Chờ đội 1...</span></div>
+            <div class="team-slot"><span class="slot-empty">Chờ đội 2...</span></div>
+            <div class="team-slot"><span class="slot-empty">Chờ đội 3...</span></div>
+            <div class="team-slot"><span class="slot-empty">Chờ đội 4...</span></div>
+          </div>
+        </div>
+        <button id="btn-start-game" class="btn btn-primary btn-lg" style="width:100%" disabled>
+          🚀 Bắt đầu trò chơi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ QUESTION PHASE ═══════ -->
+  <div id="phase-question" class="phase-container">
+    <div class="host-content">
+      <div class="question-header">
+        <span id="q-round-badge" class="badge badge-round">Round 1</span>
+        <span id="q-progress-badge" class="badge badge-question" style="margin-left:8px;">Q 1/4</span>
+      </div>
+      <div class="timer-ring" id="host-timer-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="bg-ring" cx="60" cy="60" r="54"/>
+          <circle class="progress-ring" id="host-progress-ring" cx="60" cy="60" r="54"
+            stroke-dasharray="339.292" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text" id="host-timer-text">30</div>
+      </div>
+      <div class="question-text" id="host-question-text"></div>
+      <div class="host-answer-grid" id="host-answers"></div>
+      <div class="team-chips mt-3" id="host-team-chips"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ REVEAL PHASE ═══════ -->
+  <div id="phase-reveal" class="phase-container">
+    <div class="host-content">
+      <div class="question-header">
+        <h2 class="text-gradient" style="font-size:1.8rem;">✅ Kết quả</h2>
+      </div>
+      <div class="question-text" id="reveal-question-text"></div>
+      <div class="host-answer-grid" id="reveal-answers"></div>
+      <div class="bar-chart mt-3" id="reveal-bar-chart"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ SCOREBOARD PHASE ═══════ -->
+  <div id="phase-scoreboard" class="phase-container">
+    <div class="host-content">
+      <h2 class="text-gradient text-center" style="font-size:2rem;margin-bottom:32px;">🏆 Bảng xếp hạng</h2>
+      <div class="score-chart-container" id="score-chart"></div>
+      <ul class="scoreboard-list mt-3" id="scoreboard-list"></ul>
+    </div>
+  </div>
+
+  <!-- ═══════ ELIMINATION PHASE ═══════ -->
+  <div id="phase-elimination" class="phase-container">
+    <div class="host-content text-center">
+      <h2 class="text-gradient" style="font-size:2rem;margin-bottom:32px;">⚔️ Vòng loại</h2>
+      <ul class="scoreboard-list" id="elimination-list"></ul>
+    </div>
+  </div>
+
+  <!-- ═══════ FINAL PHASE ═══════ -->
+  <div id="phase-final" class="phase-container">
+    <div class="host-content text-center">
+      <h2 style="font-size:2.5rem;margin-bottom:12px;">🎉 Kết thúc!</h2>
+      <p style="color:var(--text-secondary);font-size:1.1rem;margin-bottom:24px;">Chúc mừng đội chiến thắng!</p>
+      <div class="podium" id="podium"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ CONTROL BAR ═══════ -->
+  <div class="control-bar" id="control-bar">
+    <span class="phase-label" id="ctrl-phase-label">MAIN SLIDE</span>
+    <button class="btn btn-ghost btn-icon hidden" id="btn-pause" title="Tạm dừng">⏸</button>
+    <button class="btn btn-ghost btn-icon hidden" id="btn-skip" title="Bỏ qua">⏭</button>
+    <button class="btn btn-primary hidden" id="btn-next" title="Tiếp">→ Tiếp</button>
+    <button class="btn btn-danger btn-icon" id="btn-reset" title="Reset">🔄</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script>
+    // ── Socket & State ──────────────────────────
+    const socket = io();
+    let currentPhase = 'main_slide';
+    let gameConfig = null;
+    let teams = [];
+
+    // ── DOM Refs ────────────────────────────────
+    const normalPhases = {
+      lobby: document.getElementById('phase-lobby'),
+      question: document.getElementById('phase-question'),
+      reveal: document.getElementById('phase-reveal'),
+      scoreboard: document.getElementById('phase-scoreboard'),
+      elimination: document.getElementById('phase-elimination'),
+      final: document.getElementById('phase-final')
+    };
+
+    const fullscreenPhases = {
+      main_slide: document.getElementById('phase-main_slide'),
+      slide: document.getElementById('phase-slide'),
+      summary: document.getElementById('phase-summary'),
+      thankyou: document.getElementById('phase-thankyou')
+    };
+
+    const allPhases = { ...normalPhases, ...fullscreenPhases };
+
+    const btnStart = document.getElementById('btn-start-game');
+    const btnPause = document.getElementById('btn-pause');
+    const btnSkip = document.getElementById('btn-skip');
+    const btnNext = document.getElementById('btn-next');
+    const btnReset = document.getElementById('btn-reset');
+    const ctrlPhaseLabel = document.getElementById('ctrl-phase-label');
+    const controlBar = document.getElementById('control-bar');
+
+    // ── Phase Switching ─────────────────────────
+    function setPhase(phase) {
+      currentPhase = phase;
+      const isFullscreen = ['main_slide', 'slide', 'summary', 'thankyou'].includes(phase);
+
+      // Hide all phases
+      Object.values(allPhases).forEach(el => el.classList.remove('active'));
+
+      // Show target phase
+      if (allPhases[phase]) {
+        allPhases[phase].classList.add('active');
+      }
+
+      // Hide control bar during fullscreen phases
+      controlBar.classList.toggle('control-hidden', isFullscreen);
+
+      ctrlPhaseLabel.textContent = phase.toUpperCase().replace('_', ' ');
+      updateControlButtons();
+    }
+
+    function updateControlButtons() {
+      btnPause.classList.toggle('hidden', currentPhase !== 'question');
+      btnSkip.classList.toggle('hidden', currentPhase !== 'question');
+
+      const showNext = ['reveal', 'scoreboard', 'elimination', 'final'].includes(currentPhase);
+      btnNext.classList.toggle('hidden', !showNext);
+
+      if (currentPhase === 'reveal') btnNext.textContent = '→ Bảng điểm';
+      else if (currentPhase === 'scoreboard') btnNext.textContent = '→ Slide';
+      else if (currentPhase === 'elimination') btnNext.textContent = '→ Vòng tiếp';
+      else if (currentPhase === 'final') btnNext.textContent = '→ Tổng kết';
+    }
+
+    // ── Fullscreen Slide Advance Functions ──────
+    function advanceMainSlide() {
+      soundEngine.init();
+      soundEngine.playTransition();
+      socket.emit('host_action', { action: 'advance_main_slide' });
+    }
+
+    function advanceSlide() {
+      soundEngine.playTransition();
+      socket.emit('host_action', { action: 'next_question' });
+    }
+
+    function advanceSummary() {
+      soundEngine.playTransition();
+      socket.emit('host_action', { action: 'show_thankyou' });
+    }
+
+    function advanceThankYou() {
+      soundEngine.playTransition();
+      socket.emit('host_action', { action: 'go_to_lobby' });
+    }
+
+    // ── Host Join ───────────────────────────────
+    socket.emit('host_join');
+
+    socket.on('host_ready', (data) => {
+      gameConfig = data.config;
+
+      if (data.qrDataUrl) {
+        const qrImg = document.getElementById('qr-image');
+        qrImg.src = data.qrDataUrl;
+        qrImg.style.display = 'block';
+        qrImg.onerror = () => { qrImg.style.display = 'none'; };
+      }
+      document.getElementById('qr-url').textContent = data.url;
+
+      const ipSel = document.getElementById('ip-selector');
+      ipSel.innerHTML = '';
+      data.allIPs.forEach(ip => {
+        const opt = document.createElement('option');
+        opt.value = ip.address;
+        opt.textContent = `${ip.address} (${ip.name})`;
+        ipSel.appendChild(opt);
+      });
+
+      if (data.teams && data.teams.length > 0) {
+        teams = data.teams;
+        renderTeamSlots();
+      }
+    });
+
+    document.getElementById('ip-selector').addEventListener('change', (e) => {
+      socket.emit('host_regen_qr', { ip: e.target.value });
+    });
+
+    socket.on('qr_updated', (data) => {
+      const qrImg = document.getElementById('qr-image');
+      if (data.qrDataUrl) {
+        qrImg.src = data.qrDataUrl;
+        qrImg.style.display = 'block';
+      }
+      document.getElementById('qr-url').textContent = data.url;
+    });
+
+    // ── Team Updates ────────────────────────────
+    socket.on('team_update', (data) => {
+      teams = data.teams;
+      renderTeamSlots();
+    });
+
+    function renderTeamSlots() {
+      const slotsContainer = document.getElementById('team-slots');
+      const slots = [];
+      for (let i = 0; i < 4; i++) {
+        if (i < teams.length) {
+          const t = teams[i];
+          slots.push(`
+            <div class="team-slot filled" style="border-color:${t.color}">
+              <span class="slot-icon">${t.icon}</span>
+              <span class="slot-name" style="color:${t.color}">${t.name}</span>
+            </div>
+          `);
+        } else {
+          slots.push(`<div class="team-slot"><span class="slot-empty">Chờ đội ${i+1}...</span></div>`);
+        }
+      }
+      slotsContainer.innerHTML = slots.join('');
+      document.getElementById('team-count').textContent = teams.length;
+      btnStart.disabled = teams.length < 1;
+    }
+
+    // ── Start Game ──────────────────────────────
+    btnStart.addEventListener('click', () => {
+      soundEngine.init();
+      socket.emit('host_action', { action: 'start_game' });
+    });
+
+    // ── Game State Handler ──────────────────────
+    socket.on('game_state', (state) => {
+      teams = state.teams || teams;
+      setPhase(state.phase);
+
+      switch (state.phase) {
+        case 'main_slide':
+          // Main slide is static, no dynamic content needed
+          break;
+        case 'lobby':
+          renderTeamSlots();
+          break;
+        case 'question':
+          renderQuestion(state);
+          break;
+        case 'reveal':
+          renderReveal(state);
+          break;
+        case 'scoreboard':
+          renderScoreboard(state);
+          break;
+        case 'slide':
+          renderSlideFullscreen(state);
+          break;
+        case 'elimination':
+          renderElimination(state);
+          break;
+        case 'final':
+          renderFinal(state);
+          break;
+        case 'summary':
+          // Displaying image, no dynamic content
+          break;
+        case 'thankyou':
+          renderThankYou();
+          break;
+      }
+    });
+
+    // ── Question Render ─────────────────────────
+    function renderQuestion(state) {
+      const q = state.question;
+      if (!q) return;
+
+      document.getElementById('q-round-badge').textContent = q.roundName || `Round ${q.roundNumber}`;
+      document.getElementById('q-progress-badge').textContent = `Q ${q.questionNumber}/${q.totalQuestions}`;
+      document.getElementById('host-question-text').textContent = q.questionText;
+
+      const answersHtml = q.answers.map((ans, i) => {
+        const labels = ['A', 'B', 'C', 'D'];
+        const classes = ['answer-btn-a', 'answer-btn-b', 'answer-btn-c', 'answer-btn-d'];
+        return `
+          <div class="host-answer-tile ${classes[i]}">
+            <span class="answer-label">${labels[i]}</span>
+            <span>${ans}</span>
+            <div class="tile-bar" id="tile-bar-${i}" style="width:0%"></div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('host-answers').innerHTML = answersHtml;
+
+      const activeTeams = teams.filter(t => !t.eliminated);
+      document.getElementById('host-team-chips').innerHTML = activeTeams.map(t => `
+        <div class="team-chip waiting" id="chip-${t.id}">
+          <span>${t.icon}</span><span>${t.name}</span>
+        </div>
+      `).join('');
+
+      updateTimerDisplay(q.timeLimit, q.timeLimit);
+    }
+
+    // ── Timer ───────────────────────────────────
+    socket.on('timer_tick', ({ timeLeft, totalTime }) => {
+      updateTimerDisplay(timeLeft, totalTime);
+      if (timeLeft <= 5 && timeLeft > 0) {
+        soundEngine.playCountdownWarning();
+      } else if (timeLeft <= 10 && timeLeft > 5) {
+        soundEngine.playTick();
+      }
+    });
+
+    function updateTimerDisplay(timeLeft, totalTime) {
+      const timerText = document.getElementById('host-timer-text');
+      const ring = document.getElementById('host-progress-ring');
+      const timerRing = document.getElementById('host-timer-ring');
+
+      timerText.textContent = timeLeft;
+      const circumference = 2 * Math.PI * 54;
+      const offset = circumference * (1 - timeLeft / totalTime);
+      ring.style.strokeDashoffset = offset;
+
+      timerRing.classList.toggle('warning', timeLeft <= 10 && timeLeft > 5);
+      timerRing.classList.toggle('danger', timeLeft <= 5);
+    }
+
+    // ── Submission Status ───────────────────────
+    socket.on('submission_status', ({ teamId }) => {
+      const chip = document.getElementById(`chip-${teamId}`);
+      if (chip) {
+        chip.classList.remove('waiting');
+        chip.classList.add('answered');
+      }
+    });
+
+    // ── Reveal Render ───────────────────────────
+    function renderReveal(state) {
+      const q = state.question;
+      if (!q) return;
+
+      document.getElementById('reveal-question-text').textContent = q.questionText;
+
+      const stats = state.answerStats || [];
+      const answersHtml = q.answers.map((ans, i) => {
+        const labels = ['A', 'B', 'C', 'D'];
+        const classes = ['answer-btn-a', 'answer-btn-b', 'answer-btn-c', 'answer-btn-d'];
+        const stat = stats[i] || {};
+        const isCorrect = i === state.correctIndex;
+        const tileClass = isCorrect ? 'correct-tile' : 'wrong-tile';
+
+        return `
+          <div class="host-answer-tile ${classes[i]} ${tileClass}">
+            <span class="answer-label">${labels[i]}</span>
+            <span>${ans}</span>
+            <span style="margin-left:auto;font-weight:800;">${stat.percent || 0}%</span>
+            ${isCorrect ? '<span style="margin-left:8px;">✅</span>' : ''}
+          </div>
+        `;
+      }).join('');
+      document.getElementById('reveal-answers').innerHTML = answersHtml;
+
+      const barHtml = stats.map((stat, i) => {
+        const labels = ['A', 'B', 'C', 'D'];
+        const fillClasses = ['bar-fill-a', 'bar-fill-b', 'bar-fill-c', 'bar-fill-d'];
+        return `
+          <div class="bar-item">
+            <div class="bar-percent">${stat.percent}%</div>
+            <div class="bar-fill ${fillClasses[i]}" style="height:${Math.max(stat.percent, 2)}%"></div>
+            <div class="bar-label">${labels[i]}${stat.isCorrect ? ' ✅' : ''}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('reveal-bar-chart').innerHTML = barHtml;
+    }
+
+    // ── Answer Stats (live) ─────────────────────
+    socket.on('answer_stats', (stats) => {
+      stats.forEach((stat, i) => {
+        const bar = document.getElementById(`tile-bar-${i}`);
+        if (bar) bar.style.width = `${stat.percent}%`;
+      });
+    });
+
+    // ── Scoreboard Render ───────────────────────
+    function renderScoreboard(state) {
+      const ranked = state.rankedTeams || [...teams].sort((a, b) => b.score - a.score);
+      const maxScore = Math.max(...ranked.map(t => t.score), 1);
+
+      const chartHtml = ranked.map(t => {
+        const height = (t.score / maxScore) * 100;
+        return `
+          <div class="score-chart-bar">
+            <div class="score-chart-value">${t.score}</div>
+            <div class="score-chart-fill" style="height:${Math.max(height, 2)}%;background:${t.color}"></div>
+            <div class="score-chart-icon">${t.icon}</div>
+            <div class="score-chart-team">${t.name}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('score-chart').innerHTML = chartHtml;
+
+      const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+      const listHtml = ranked.map((t, i) => `
+        <li class="scoreboard-item ${t.eliminated ? 'eliminated' : ''}">
+          <span class="scoreboard-rank">${medals[i] || (i+1)}</span>
+          <div class="scoreboard-team-info">
+            <span class="scoreboard-icon">${t.icon}</span>
+            <span class="scoreboard-name">${t.name}</span>
+          </div>
+          <span class="scoreboard-score">${t.score} pts</span>
+        </li>
+      `).join('');
+      document.getElementById('scoreboard-list').innerHTML = listHtml;
+    }
+
+    // ── Fullscreen Slide Render ─────────────────
+    function renderSlideFullscreen(state) {
+      const container = document.getElementById('slide-fs-content');
+      if (state.slideImage && !state.slideImage.includes('placeholder')) {
+        container.innerHTML = `<img src="${state.slideImage}" alt="Slide" onerror="this.outerHTML='<div class=\\'slide-placeholder-fs\\'>🖼️</div>'">`;
+      } else {
+        container.innerHTML = '<div class="slide-placeholder-fs">🖼️</div>';
+      }
+    }
+
+    // ── Elimination Render ──────────────────────
+    function renderElimination(state) {
+      const allTeams = (state.teams || teams).sort((a, b) => b.score - a.score);
+      const eliminatedIds = state.eliminatedTeams || [];
+
+      const listHtml = allTeams.map(t => {
+        const isEliminated = t.eliminated || eliminatedIds.includes(t.id);
+        return `
+          <li class="scoreboard-item ${isEliminated ? 'eliminated' : ''}" style="border-left:4px solid ${isEliminated ? 'var(--accent-red)' : 'var(--accent-green)'}">
+            <span class="scoreboard-icon">${t.icon}</span>
+            <div class="scoreboard-team-info">
+              <span class="scoreboard-name">${t.name}</span>
+            </div>
+            <span class="scoreboard-score">${t.score} pts</span>
+            <span style="font-size:1.2rem">${isEliminated ? '❌' : '✅'}</span>
+          </li>
+        `;
+      }).join('');
+      document.getElementById('elimination-list').innerHTML = listHtml;
+    }
+
+    // ── Final Render ────────────────────────────
+    function renderFinal(state) {
+      const ranked = state.rankedTeams || [...teams].sort((a, b) => b.score - a.score);
+      const medals = ['🥇', '🥈', '🥉'];
+      const standClasses = ['podium-stand-1', 'podium-stand-2', 'podium-stand-3'];
+
+      const podiumOrder = [];
+      if (ranked[1]) podiumOrder.push({ ...ranked[1], rank: 1 });
+      if (ranked[0]) podiumOrder.push({ ...ranked[0], rank: 0 });
+      if (ranked[2]) podiumOrder.push({ ...ranked[2], rank: 2 });
+
+      const podiumHtml = podiumOrder.map(t => `
+        <div class="podium-place">
+          <div class="podium-medal">${medals[t.rank] || ''}</div>
+          <div class="podium-icon">${t.icon}</div>
+          <div class="podium-name">${t.name}</div>
+          <div class="podium-score-val">${t.score} pts</div>
+          <div class="podium-stand ${standClasses[t.rank]}">${t.rank + 1}</div>
+        </div>
+      `).join('');
+      document.getElementById('podium').innerHTML = podiumHtml;
+    }
+
+
+
+    // ── Thank You Render ────────────────────────
+    function renderThankYou() {
+      const container = document.getElementById('confetti-container');
+      container.innerHTML = '';
+      const colors = ['#2196F3', '#2ED573', '#00BCD4', '#FFA502', '#7C4DFF', '#FFD700', '#EC4899'];
+      for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDuration = (2 + Math.random() * 3) + 's';
+        piece.style.animationDelay = Math.random() * 2 + 's';
+        piece.style.width = (8 + Math.random() * 8) + 'px';
+        piece.style.height = (8 + Math.random() * 8) + 'px';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        container.appendChild(piece);
+      }
+    }
+
+    // ── Sound Events ────────────────────────────
+    socket.on('play_sound', ({ sound }) => {
+      soundEngine.handleSoundEvent(sound);
+    });
+
+    // ── Pause ───────────────────────────────────
+    let isPaused = false;
+    socket.on('game_paused', ({ paused }) => {
+      isPaused = paused;
+      btnPause.textContent = paused ? '▶' : '⏸';
+      btnPause.title = paused ? 'Tiếp tục' : 'Tạm dừng';
+    });
+
+    // ── Control Buttons ─────────────────────────
+    btnPause.addEventListener('click', () => {
+      socket.emit('host_action', { action: 'pause' });
+    });
+
+    btnSkip.addEventListener('click', () => {
+      socket.emit('host_action', { action: 'skip' });
+    });
+
+    btnNext.addEventListener('click', () => {
+      if (currentPhase === 'reveal') {
+        socket.emit('host_action', { action: 'next_after_reveal' });
+      } else if (currentPhase === 'scoreboard') {
+        socket.emit('host_action', { action: 'show_slide' });
+      } else if (currentPhase === 'elimination') {
+        socket.emit('host_action', { action: 'next_round' });
+      } else if (currentPhase === 'final') {
+        socket.emit('host_action', { action: 'show_summary' });
+      }
+    });
+
+    btnReset.addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn reset trò chơi?')) {
+        socket.emit('host_action', { action: 'reset' });
+      }
+    });
+
+    // ── Game Reset ──────────────────────────────
+    socket.on('game_reset', () => {
+      teams = [];
+      isPaused = false;
+      renderTeamSlots();
+      // Re-request host data (QR, etc.)
+      socket.emit('host_join');
+    });
+
+    // ── Host Error ──────────────────────────────
+    socket.on('host_error', ({ message }) => {
+      alert(message);
+    });
+  </script>
+</body>
+</html>

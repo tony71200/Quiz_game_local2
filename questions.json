@@ -1,0 +1,113 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "name": "Round 1",
+      "questions": [
+        {
+          "id": "r1_q1",
+          "text": "Theo Nghị quyết đại hội XIV, mối quan hệ giữa giáo dục đào tạo với khao học công nghệ được định hướng như thế nào?",
+          "answers": ["KHCN là công cụ hỗ trợ quản lý trong ngành giáo dục", 
+                      "Là hai lĩnh vực trọng điểm, cần đầu tư phát triển theo chiến lược riêng", 
+                      "GDĐT gắn chặt với KHCN và đổi mới sáng tạo, hình thành hệ sinh thái tri thức", 
+                      "GDĐT chủ yếu phục vụ nhu cầu quản lý nhà nước, còn KHCN phục vụ sản xuất, phát triển kinh tế."],
+          "correct_index": 2,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        },
+        {
+          "id": "r1_q2",
+          "text": "Theo NQ, mục tiêu trọng tâm về phát triển nguồn nhân lực chất lượng cao gắn với KHCN nhấn mạnh yếu tố nào sau đây?",
+          "answers": ["Đặt GDĐT và KHCN là quốc sách hang đầu, là đột phá chiến lược để phát triển nhanh, bền vững", 
+                      "Xem GDĐT là lĩnh vực an sinh xã hội, nâng cao chất lượng dân trí và cuộc sống.", 
+                      "Ưu tiên thu hút chuyên gia có trình độ chuyên môn cao nhằm đạo tạo đội ngũ lao động lâu dài", 
+                      "Ứng dụng KHCN trong đổi mới GDĐT"],
+          "correct_index": 0,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        },
+        {
+          "id": "r1_q3",
+          "text": "Tỷ lệ lao động qua đào tạo có bằng cấp, chứng chỉ phấn đấu đạt bao nhiêu % trong giai đoạn 2026-2030?",
+          "answers": ["30-35%", 
+                      "35-40%", 
+                      "40-45%",
+                      "45-50%"],
+          "correct_index": 1,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        },
+        {
+          "id": "r1_q4",
+          "text": "Theo Nghị quyết Đại hội XIV, đóng góp của tổng yếu tố năng suất (TFP) vào tăng trưởng kinh tế phấn đấu đạt trên mức nào trong giai đoạn 2026-2030?",
+          "answers": ["Trên 45%", 
+                      "Trên 50%", 
+                      "Trên 55%", 
+                      "Trên 60%"],
+          "correct_index": 2,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "name": "Round 2",
+      "questions": [
+        {
+          "id": "r2_q1",
+          "text": "Nghị quyết yêu cầu HDI ≥0,8 kết hợp \"tỉ lệ lao động qua đào tạo có bằng cấp, chứng chỉ từ 35-40%\" và lao động nông nghiệp <20%. Mục tiêu chiến lược tổng thể của giáo dục đào tạo là gì?",
+          "answers": ["Xây dựng nền giáo dục công bằng theo chuẩn khu vực", 
+                      "Xây dựng nền giáo dục quốc dân hiện đại, ngang tầm khu vực và thế giới", 
+                      "Đạt top 40 quốc gia hạnh phúc nhất", 
+                      "Giảm tỷ lệ hộ nghèo đa chiều 1-1,5 điểm/năm"],
+          "correct_index": 1,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        },
+        {
+          "id": "r2_q2",
+          "text": "Dựa trên các chỉ tiêu Nghị quyết XIV, nếu TFP đóng góp >55% vào tăng trưởng GDP ≥10%/năm và năng suất lao động ≥8,5%/năm, yếu tố nào được coi là động lực then chốt tạo ra mô hình tăng trưởng mới?",
+          "answers": ["Đầu tư công chiếm 20-22% GDP", 
+                      "Kinh tế số chiếm ≥30% GDP", 
+                      "Khoa học, công nghệ, đổi mới sáng tạo và chuyển đổi số", 
+                      "Tỷ lệ đô thị hóa >50%"],
+          "correct_index": 2,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "name": "Bonus Round",
+      "questions": [
+        {
+          "id": "r3_q1",
+          "text": "Nghị quyết XIV đặt phương hướng #5 KHCN với TFP >55% + kinh tế số ≥30% GDP. Nhiệm vụ triển khai thể chế ưu tiên là gì?",
+          "answers": ["Khẩn trương đổi mới cơ chế, chính sách KHCN theo thị trường quốc tế", 
+                      "Quyết liệt hoàn thiện chính sách đầu tư, tổ chức đơn vị nghiên cứu KHCN", 
+                      "Khẩn trương khuyến khích doanh nghiệp đầu tư công nghệ cao, chiến lược", 
+                      "Quyết liệt đổi mới cơ chế quản lý, tài chính cho các viện nghiên cứu"],
+          "correct_index": 1,
+          "time_limit": 30,
+          "slide_image": "/assets/slides/placeholder.png"
+        }
+      ]
+    },
+    {
+      "round": 99,
+      "name": "Tie Break",
+      "questions": [
+        {
+          "id": "tb_q1",
+          "text": "Tie-break: Which gas do plants absorb from the atmosphere?",
+          "answers": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"],
+          "correct_index": 2,
+          "time_limit": 20,
+          "slide_image": "/assets/slides/placeholder.png"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+[
+  {
+    "date": "2026-04-11T23:48:58.246Z",
+    "teams": [
+      {
+        "id": "team_1775951172806_hc2i",
+        "name": "cá mập biển sâu",
+        "icon": "🦈",
+        "color": "#FF4757",
+        "score": 88,
+        "roundScore": 0,
+        "eliminated": false,
+        "socketId": "HRVaOQ987UWe6FvmAAAD",
+        "answers": {}
+      }
+    ],
+    "rounds": 3
+  },
+  {
+    "date": "2026-04-12T00:16:07.443Z",
+    "teams": [
+      {
+        "id": "team_1775952707296_qv0b",
+        "name": "Đội Đại Bàng",
+        "icon": "🦅",
+        "color": "#1E90FF",
+        "score": 182,
+        "roundScore": 0,
+        "eliminated": false
+      },
+      {
+        "id": "team_1775952707001_42yr",
+        "name": "Đội Sư Tử",
+        "icon": "🦁",
+        "color": "#2ED573",
+        "score": 178,
+        "roundScore": 0,
+        "eliminated": false
+      },
+      {
+        "id": "team_1775952707578_9zz6",
+        "name": "Đội Cáo",
+        "icon": "🦊",
+        "color": "#FFA502",
+        "score": 178,
+        "roundScore": 0,
+        "eliminated": true
+      },
+      {
+        "id": "team_1775952706689_1h29",
+        "name": "Đội Rồng",
+        "icon": "🐉",
+        "color": "#FF4757",
+        "score": 0,
+        "roundScore": 0,
+        "eliminated": true
+      }
+    ],
+    "rounds": 3
+  },
+  {
+    "date": "2026-04-12T01:16:43.311Z",
+    "teams": [
+      {
+        "id": "team_1775956343822_zziz",
+        "name": "Đội Đại Bàng",
+        "icon": "🦅",
+        "color": "#1E90FF",
+        "score": 184,
+        "roundScore": 0,
+        "eliminated": false
+      },
+      {
+        "id": "team_1775956343230_m3tn",
+        "name": "Đội Rồng",
+        "icon": "🐉",
+        "color": "#FF4757",
+        "score": 174,
+        "roundScore": 0,
+        "eliminated": false
+      },
+      {
+        "id": "team_1775956344134_sbch",
+        "name": "Đội Cáo",
+        "icon": "🦊",
+        "color": "#FFA502",
+        "score": 92,
+        "roundScore": 0,
+        "eliminated": true
+      },
+      {
+        "id": "team_1775956343510_nryz",
+        "name": "Đội Sư Tử",
+        "icon": "🦁",
+        "color": "#2ED573",
+        "score": 88,
+        "roundScore": 0,
+        "eliminated": true
+      }
+    ],
+    "rounds": 3
+  }
+]

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+  <title>Quiz Game — Tham gia</title>
+  <meta name="description" content="Tham gia trò chơi Quiz bằng điện thoại">
+  <link rel="stylesheet" href="/shared/style-base.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    .client-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .client-card { width: 100%; max-width: 420px; }
+    .join-header { text-align: center; margin-bottom: 24px; }
+    .join-header h1 { font-size: 2rem; margin-bottom: 4px; }
+    .join-header p { color: var(--text-secondary); font-size: 0.95rem; }
+    .answer-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .answer-btn { display: flex; align-items: center; min-height: 64px; }
+    .result-icon { font-size: 5rem; margin-bottom: 16px; animation: scorePopIn 0.8s ease; }
+    .team-badge {
+      display: flex; align-items: center; gap: 12px; padding: 16px;
+      background: var(--bg-glass); border-radius: var(--radius-lg);
+      border: 2px solid; margin-bottom: 20px;
+    }
+    .team-badge .badge-icon { font-size: 2.5rem; }
+    .team-badge .badge-name { font-weight: 700; font-size: 1.2rem; }
+    .waiting-animation { text-align: center; padding: 40px 0; }
+    .waiting-animation .waiting-text {
+      font-size: 1.2rem; color: var(--text-secondary); margin-top: 16px;
+    }
+    .client-timer-ring { width: 100px; height: 100px; }
+    .error-message {
+      padding: 12px 16px;
+      background: rgba(255, 71, 87, 0.15);
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      border-radius: var(--radius-md);
+      color: var(--accent-red);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .total-score-display {
+      text-align: center; margin-top: 12px;
+      font-size: 1rem; color: var(--text-secondary);
+    }
+    .total-score-display .score-number {
+      font-family: var(--font-display);
+      font-weight: 800; font-size: 1.3rem; color: var(--text-primary);
+    }
+    .eliminated-screen { text-align: center; padding: 40px 20px; }
+    .eliminated-screen .skull { font-size: 5rem; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <svg style="position:absolute;width:0;height:0;">
+    <defs>
+      <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#2196F3"/>
+        <stop offset="100%" style="stop-color:#00BCD4"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="client-container">
+    <div class="client-card">
+
+      <!-- ═══════ JOIN SCREEN ═══════ -->
+      <div id="screen-join" class="animate-fade-in-up">
+        <div class="join-header">
+          <h1 class="text-gradient">🎮 Quiz Game</h1>
+          <p>Chọn biểu tượng và nhập tên đội</p>
+        </div>
+        <div id="error-msg" class="error-message"></div>
+        <div class="glass-card">
+          <label style="font-weight:600;display:block;margin-bottom:12px;">Chọn biểu tượng đội:</label>
+          <div class="icon-picker" id="icon-picker"></div>
+          <label style="font-weight:600;display:block;margin:16px 0 8px;">Tên đội:</label>
+          <input type="text" id="team-name-input" class="input-field" placeholder="Nhập tên đội..." maxlength="20">
+          <button id="btn-join" class="btn btn-primary btn-lg mt-3" style="width:100%">
+            🚀 Tham gia
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══════ LOBBY/WAITING SCREEN ═══════ -->
+      <div id="screen-lobby" style="display:none">
+        <div class="team-badge" id="my-team-badge" style="border-color:var(--accent-blue);">
+          <span class="badge-icon" id="my-icon"></span>
+          <div>
+            <div class="badge-name" id="my-name"></div>
+            <div style="color:var(--text-secondary);font-size:0.85rem;">Đã kết nối</div>
+          </div>
+        </div>
+        <div class="waiting-animation">
+          <div style="font-size:3rem;">⏳</div>
+          <div class="waiting-text">
+            Chờ host bắt đầu trò chơi
+            <span class="waiting-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+          <div class="mt-2" style="color:var(--text-muted);font-size:0.85rem;">
+            <span id="lobby-team-count">0</span> đội đã tham gia
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═══════ QUESTION SCREEN ═══════ -->
+      <div id="screen-question" style="display:none">
+        <div style="text-align:center;margin-bottom:16px;">
+          <span id="c-round-badge" class="badge badge-round">Round 1</span>
+          <span id="c-progress-badge" class="badge badge-question" style="margin-left:6px;">Q 1/4</span>
+        </div>
+        <div class="timer-ring client-timer-ring" style="margin:0 auto 16px;" id="client-timer-ring">
+          <svg viewBox="0 0 120 120">
+            <circle class="bg-ring" cx="60" cy="60" r="54"/>
+            <circle class="progress-ring" id="client-progress-ring" cx="60" cy="60" r="54"
+              stroke-dasharray="339.292" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text" id="client-timer-text" style="font-size:1.6rem;">30</div>
+        </div>
+        <div class="answer-grid" id="client-answers"></div>
+      </div>
+
+      <!-- ═══════ WAIT SCREEN (after submitting, timer still running) ═══════ -->
+      <div id="screen-wait" style="display:none">
+        <div style="text-align:center;margin-bottom:16px;">
+          <span id="w-round-badge" class="badge badge-round">Round 1</span>
+          <span id="w-progress-badge" class="badge badge-question" style="margin-left:6px;">Q 1/4</span>
+        </div>
+        <div class="timer-ring client-timer-ring" style="margin:0 auto 16px;" id="wait-timer-ring">
+          <svg viewBox="0 0 120 120">
+            <circle class="bg-ring" cx="60" cy="60" r="54"/>
+            <circle class="progress-ring" id="wait-progress-ring" cx="60" cy="60" r="54"
+              stroke-dasharray="339.292" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text" id="wait-timer-text" style="font-size:1.6rem;">30</div>
+        </div>
+        <div class="waiting-animation" style="padding:20px 0;">
+          <div style="font-size:3rem;">✅</div>
+          <div class="waiting-text" style="font-size:1.1rem;font-weight:600;color:var(--text-primary);">
+            Đã gửi câu trả lời
+          </div>
+          <div style="color:var(--text-secondary);margin-top:8px;">Chờ hết thời gian...</div>
+        </div>
+      </div>
+
+      <!-- ═══════ RESULT SCREEN ═══════ -->
+      <div id="screen-result" style="display:none;text-align:center;">
+        <div class="result-icon" id="result-icon">✅</div>
+        <h2 id="result-text" style="font-size:1.8rem;margin-bottom:12px;">Chính xác!</h2>
+        <div class="score-pop text-gradient" id="result-score">+100</div>
+        <div class="total-score-display mt-3">
+          Tổng điểm: <span class="score-number" id="result-total-score">0</span>
+        </div>
+      </div>
+
+      <!-- ═══════ SCOREBOARD WAIT ═══════ -->
+      <div id="screen-scoreboard-wait" style="display:none">
+        <div class="waiting-animation">
+          <div style="font-size:3rem;">🏆</div>
+          <div class="waiting-text">Đang hiển thị bảng điểm...</div>
+          <div class="total-score-display mt-2">
+            Điểm hiện tại: <span class="score-number" id="wait-total-score">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ ELIMINATED SCREEN ═══════ -->
+      <div id="screen-eliminated" style="display:none">
+        <div class="eliminated-screen">
+          <div class="skull">💀</div>
+          <h2 style="color:var(--accent-red);margin-bottom:12px;">Bạn đã bị loại</h2>
+          <p style="color:var(--text-secondary);">Cảm ơn bạn đã tham gia!</p>
+        </div>
+      </div>
+
+      <!-- ═══════ FINAL SCREEN ═══════ -->
+      <div id="screen-final" style="display:none;text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;">🎉</div>
+        <h2 class="text-gradient" style="font-size:1.8rem;margin-bottom:12px;">Trò chơi kết thúc!</h2>
+        <div class="total-score-display">
+          Điểm cuối cùng: <span class="score-number" id="final-total-score">0</span>
+        </div>
+      </div>
+
+      <!-- ═══════ THANK YOU SCREEN ═══════ -->
+      <div id="screen-thankyou" style="display:none;text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;">🙏</div>
+        <h2 class="text-gradient" style="font-size:1.8rem;margin-bottom:12px;">Cảm ơn bạn!</h2>
+        <p style="color:var(--text-secondary);">Hẹn gặp lại ở cuộc thi tiếp theo!</p>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script>
+    // ── State ───────────────────────────────────
+    const socket = io();
+    let myTeam = null;
+    let myTeamId = null;
+    let myTotalScore = 0;
+    let isEliminated = false;
+    let hasAnswered = false;
+    let currentIcons = [];
+    let pendingResult = null; // Store result until timer ends
+    let currentScreen = 'screen-join';
+    let lastQuestionState = null; // Track question info for wait screen
+
+    // ── Screen Management ───────────────────────
+    const screens = [
+      'screen-join', 'screen-lobby', 'screen-question',
+      'screen-wait', 'screen-result', 'screen-scoreboard-wait',
+      'screen-eliminated', 'screen-final', 'screen-thankyou'
+    ];
+
+    function showScreen(id) {
+      currentScreen = id;
+      screens.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.style.display = (s === id) ? 'block' : 'none';
+      });
+    }
+
+    // ── Init ────────────────────────────────────
+    socket.on('init', (data) => {
+      currentIcons = data.config?.icons || ['🐉','🦁','🐺','🦅','🦊','🐻','🐯','🦈','🦉','🔥'];
+      renderIconPicker();
+    });
+
+    // ── Icon Picker ─────────────────────────────
+    let selectedIcon = null;
+
+    function renderIconPicker() {
+      const picker = document.getElementById('icon-picker');
+      picker.innerHTML = currentIcons.map(icon => `
+        <div class="icon-option" data-icon="${icon}" onclick="selectIcon(this, '${icon}')">${icon}</div>
+      `).join('');
+    }
+
+    function selectIcon(el, icon) {
+      document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedIcon = icon;
+    }
+
+    // ── Join ────────────────────────────────────
+    document.getElementById('btn-join').addEventListener('click', () => {
+      const name = document.getElementById('team-name-input').value.trim();
+      const errorEl = document.getElementById('error-msg');
+
+      if (!name) {
+        errorEl.textContent = 'Vui lòng nhập tên đội!';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (!selectedIcon) {
+        errorEl.textContent = 'Vui lòng chọn biểu tượng đội!';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      errorEl.style.display = 'none';
+      soundEngine.init(); // Init audio on user gesture
+      socket.emit('join_team', { name, icon: selectedIcon });
+    });
+
+    document.getElementById('team-name-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-join').click();
+    });
+
+    socket.on('join_success', ({ team, id }) => {
+      myTeam = team;
+      myTeamId = id;
+
+      document.getElementById('my-icon').textContent = team.icon;
+      document.getElementById('my-name').textContent = team.name;
+      document.getElementById('my-team-badge').style.borderColor = team.color;
+
+      showScreen('screen-lobby');
+    });
+
+    socket.on('join_rejected', ({ reason }) => {
+      const errorEl = document.getElementById('error-msg');
+      errorEl.textContent = reason;
+      errorEl.style.display = 'block';
+    });
+
+    // ── Team Update ─────────────────────────────
+    socket.on('team_update', (data) => {
+      const countEl = document.getElementById('lobby-team-count');
+      if (countEl) countEl.textContent = data.teams.length;
+    });
+
+    // ── Game State Handler ──────────────────────
+    socket.on('game_state', (state) => {
+      if (isEliminated) return;
+      if (!myTeam) return;
+
+      switch (state.phase) {
+        case 'main_slide':
+        case 'lobby':
+          // Clients stay on lobby/join screen
+          break;
+
+        case 'question':
+          hasAnswered = false;
+          pendingResult = null;
+          lastQuestionState = state;
+          renderClientQuestion(state);
+          showScreen('screen-question');
+          break;
+
+        case 'reveal':
+          // Result is shown via personal_result event
+          // If we have a pending result, show it now
+          if (pendingResult) {
+            showResult(pendingResult.isCorrect, pendingResult.score, pendingResult.totalScore);
+            pendingResult = null;
+          } else if (!hasAnswered) {
+            // Didn't answer at all
+            showResult(false, 0, myTotalScore);
+          }
+          break;
+
+        case 'scoreboard':
+        case 'slide':
+          document.getElementById('wait-total-score').textContent = myTotalScore;
+          showScreen('screen-scoreboard-wait');
+          break;
+
+        case 'elimination':
+          const myTeamInfo = state.teams?.find(t => t.id === myTeamId);
+          if (myTeamInfo && myTeamInfo.eliminated) {
+            isEliminated = true;
+            soundEngine.playEliminated();
+            showScreen('screen-eliminated');
+          } else {
+            document.getElementById('wait-total-score').textContent = myTotalScore;
+            showScreen('screen-scoreboard-wait');
+          }
+          break;
+
+        case 'final':
+        case 'summary':
+          document.getElementById('final-total-score').textContent = myTotalScore;
+          showScreen('screen-final');
+          break;
+
+        case 'thankyou':
+          showScreen('screen-thankyou');
+          break;
+      }
+    });
+
+    // ── Question Render ─────────────────────────
+    function renderClientQuestion(state) {
+      const q = state.question;
+      if (!q) return;
+
+      document.getElementById('c-round-badge').textContent = q.roundName || `Round ${q.roundNumber}`;
+      document.getElementById('c-progress-badge').textContent = `Q ${q.questionNumber}/${q.totalQuestions}`;
+
+      const labels = ['A', 'B', 'C', 'D'];
+      const btnClasses = ['answer-btn-a', 'answer-btn-b', 'answer-btn-c', 'answer-btn-d'];
+
+      const answersHtml = q.answers.map((ans, i) => `
+        <button class="answer-btn ${btnClasses[i]}" id="ans-btn-${i}" onclick="submitAnswer(${i})">
+          <span class="answer-label">${labels[i]}</span>
+          <span>${ans}</span>
+        </button>
+      `).join('');
+      document.getElementById('client-answers').innerHTML = answersHtml;
+      updateClientTimer(q.timeLimit, q.timeLimit);
+    }
+
+    // ── Timer ───────────────────────────────────
+    socket.on('timer_tick', ({ timeLeft, totalTime }) => {
+      updateClientTimer(timeLeft, totalTime);
+      // Also update wait screen timer
+      updateWaitTimer(timeLeft, totalTime);
+
+      // Sound effects
+      if (timeLeft <= 5 && timeLeft > 0) {
+        soundEngine.playCountdownWarning();
+      }
+    });
+
+    function updateClientTimer(timeLeft, totalTime) {
+      const timerText = document.getElementById('client-timer-text');
+      const ring = document.getElementById('client-progress-ring');
+      const timerRing = document.getElementById('client-timer-ring');
+
+      if (!timerText) return;
+      timerText.textContent = timeLeft;
+
+      const circumference = 2 * Math.PI * 54;
+      const offset = circumference * (1 - timeLeft / totalTime);
+      ring.style.strokeDashoffset = offset;
+
+      timerRing.classList.toggle('warning', timeLeft <= 10 && timeLeft > 5);
+      timerRing.classList.toggle('danger', timeLeft <= 5);
+    }
+
+    function updateWaitTimer(timeLeft, totalTime) {
+      const timerText = document.getElementById('wait-timer-text');
+      const ring = document.getElementById('wait-progress-ring');
+      const timerRing = document.getElementById('wait-timer-ring');
+
+      if (!timerText) return;
+      timerText.textContent = timeLeft;
+
+      const circumference = 2 * Math.PI * 54;
+      const offset = circumference * (1 - timeLeft / totalTime);
+      ring.style.strokeDashoffset = offset;
+
+      timerRing.classList.toggle('warning', timeLeft <= 10 && timeLeft > 5);
+      timerRing.classList.toggle('danger', timeLeft <= 5);
+    }
+
+    // ── Submit Answer ───────────────────────────
+    function submitAnswer(index) {
+      if (hasAnswered) return;
+      hasAnswered = true;
+
+      document.querySelectorAll('.answer-btn').forEach(btn => btn.classList.add('disabled'));
+      document.getElementById(`ans-btn-${index}`).classList.add('selected');
+
+      socket.emit('submit_answer', { answer: index });
+    }
+
+    socket.on('answer_received', () => {
+      // Copy question info to wait screen
+      if (lastQuestionState?.question) {
+        const q = lastQuestionState.question;
+        document.getElementById('w-round-badge').textContent = q.roundName || `Round ${q.roundNumber}`;
+        document.getElementById('w-progress-badge').textContent = `Q ${q.questionNumber}/${q.totalQuestions}`;
+      }
+      showScreen('screen-wait');
+    });
+
+    // ── Personal Result ─────────────────────────
+    // KEY: Result is ONLY shown after timer ends (server only sends after endQuestion)
+    socket.on('personal_result', ({ isCorrect, score, totalScore }) => {
+      myTotalScore = totalScore;
+      // Play sound effect
+      if (isCorrect) {
+        soundEngine.playCorrect();
+      } else {
+        soundEngine.playWrong();
+      }
+      // Show result immediately (server only sends this when timer is done)
+      showResult(isCorrect, score, totalScore);
+    });
+
+    function showResult(isCorrect, score, totalScore) {
+      document.getElementById('result-icon').textContent = isCorrect ? '✅' : '❌';
+      document.getElementById('result-text').textContent = isCorrect ? 'Chính xác!' : 'Sai rồi!';
+      document.getElementById('result-text').style.color = isCorrect ? 'var(--accent-green)' : 'var(--accent-red)';
+      document.getElementById('result-score').textContent = isCorrect ? `+${score}` : '+0';
+      document.getElementById('result-total-score').textContent = totalScore;
+      showScreen('screen-result');
+    }
+
+    // ── Eliminated ──────────────────────────────
+    socket.on('eliminated', () => {
+      isEliminated = true;
+      soundEngine.playEliminated();
+      showScreen('screen-eliminated');
+    });
+
+    // ── Sound Events ────────────────────────────
+    socket.on('play_sound', ({ sound }) => {
+      soundEngine.handleSoundEvent(sound);
+    });
+
+    // ── Pause ───────────────────────────────────
+    socket.on('game_paused', ({ paused }) => {
+      document.querySelectorAll('.answer-btn').forEach(btn => {
+        if (paused) {
+          btn.classList.add('disabled');
+        } else if (!hasAnswered) {
+          btn.classList.remove('disabled');
+        }
+      });
+    });
+
+    // ── Game Reset ──────────────────────────────
+    socket.on('game_reset', () => {
+      myTeam = null;
+      myTeamId = null;
+      myTotalScore = 0;
+      isEliminated = false;
+      hasAnswered = false;
+      pendingResult = null;
+      lastQuestionState = null;
+      showScreen('screen-join');
+    });
+
+    // ── Init ────────────────────────────────────
+    renderIconPicker();
+  </script>
+</body>
+</html>
