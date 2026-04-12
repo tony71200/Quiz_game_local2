@@ -196,6 +196,11 @@
     const socket = io();
     let currentPhase = 'main_slide';
     let gameConfig = null;
+    let slideImages = {
+      main_slide: '/assets/slides/main_slide.jpg',
+      summary_slide: '/assets/slides/summary_slide.jpg',
+      thank_slide: '/assets/slides/thank_slide.svg'
+    };
     let teams = [];
 
     // ── DOM Refs ────────────────────────────────
@@ -216,6 +221,11 @@
     };
 
     const allPhases = { ...normalPhases, ...fullscreenPhases };
+    const slideContainers = {
+      main_slide: document.querySelector('#phase-main_slide .fs-content'),
+      summary_slide: document.querySelector('#phase-summary .fs-content'),
+      thank_slide: document.querySelector('#phase-thankyou .fs-content')
+    };
 
     const btnStart = document.getElementById('btn-start-game');
     const btnPause = document.getElementById('btn-pause');
@@ -224,6 +234,49 @@
     const btnReset = document.getElementById('btn-reset');
     const ctrlPhaseLabel = document.getElementById('ctrl-phase-label');
     const controlBar = document.getElementById('control-bar');
+
+    function renderImageSlide(container, imagePath, label, fallbackHtml = null) {
+      if (!container) return;
+      const fallback = fallbackHtml || `<div class="slide-placeholder-fs">${label}</div>`;
+
+      if (!imagePath) {
+        container.innerHTML = fallback;
+        return;
+      }
+
+      container.innerHTML = '';
+      const img = new Image();
+      img.alt = label;
+      img.onerror = () => {
+        container.innerHTML = fallback;
+      };
+      img.src = imagePath;
+      container.appendChild(img);
+    }
+
+    function renderConfiguredSlides() {
+      renderImageSlide(slideContainers.main_slide, slideImages.main_slide, 'Main Slide');
+      renderImageSlide(slideContainers.summary_slide, slideImages.summary_slide, 'Summary Slide');
+      renderImageSlide(
+        slideContainers.thank_slide,
+        slideImages.thank_slide,
+        'Thank You Slide',
+        `<div class="thankyou-emoji">🙏</div>
+        <div class="thankyou-title text-gradient">Cam on!</div>
+        <div class="thankyou-subtitle">Cam on tat ca cac doi da tham gia cuoc thi.<br>Hen gap lai!</div>
+        <div class="main-slide-hint" style="bottom:30px;">Nhan de quay ve Lobby →</div>`
+      );
+    }
+
+    function applySlideImages(nextSlideImages = {}, phaseSlideImage = null, phase = currentPhase) {
+      slideImages = { ...slideImages, ...nextSlideImages };
+      if (phase === 'main_slide' && phaseSlideImage) slideImages.main_slide = phaseSlideImage;
+      if (phase === 'summary' && phaseSlideImage) slideImages.summary_slide = phaseSlideImage;
+      if (phase === 'thankyou' && phaseSlideImage) slideImages.thank_slide = phaseSlideImage;
+      renderConfiguredSlides();
+    }
+
+    renderConfiguredSlides();
 
     // ── Phase Switching ─────────────────────────
     function setPhase(phase) {
@@ -281,10 +334,17 @@
     }
 
     // ── Host Join ───────────────────────────────
+    socket.on('init', (data) => {
+      gameConfig = data.config || gameConfig;
+      applySlideImages(data.slideImages, data.state?.slideImage, data.state?.phase);
+      if (data.state) handleGameState(data.state);
+    });
+
     socket.emit('host_join');
 
     socket.on('host_ready', (data) => {
       gameConfig = data.config;
+      applySlideImages(data.slideImages, data.state?.slideImage, data.state?.phase);
 
       if (data.qrDataUrl) {
         const qrImg = document.getElementById('qr-image');
@@ -307,6 +367,8 @@
         teams = data.teams;
         renderTeamSlots();
       }
+
+      if (data.state) handleGameState(data.state);
     });
 
     document.getElementById('ip-selector').addEventListener('change', (e) => {
@@ -356,13 +418,13 @@
     });
 
     // ── Game State Handler ──────────────────────
-    socket.on('game_state', (state) => {
+    function handleGameState(state) {
       teams = state.teams || teams;
+      applySlideImages(state.slideImages, state.slideImage, state.phase);
       setPhase(state.phase);
 
       switch (state.phase) {
         case 'main_slide':
-          // Main slide is static, no dynamic content needed
           break;
         case 'lobby':
           renderTeamSlots();
@@ -386,13 +448,14 @@
           renderFinal(state);
           break;
         case 'summary':
-          // Displaying image, no dynamic content
           break;
         case 'thankyou':
           renderThankYou();
           break;
       }
-    });
+    }
+
+    socket.on('game_state', handleGameState);
 
     // ── Question Render ─────────────────────────
     function renderQuestion(state) {

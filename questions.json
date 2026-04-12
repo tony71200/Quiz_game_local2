@@ -1,4 +1,7 @@
 {
+  "main_slide": "/assets/slides/main_slide.jpg",
+  "summary_slide": "/assets/slides/summary_slide.jpg",
+  "thank_slide": "/assets/slides/thank_slide.svg",
   "rounds": [
     {
       "round": 1,

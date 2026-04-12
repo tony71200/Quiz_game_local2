@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Thank you slide">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#050d1f"/>
+      <stop offset="0.52" stop-color="#0a2545"/>
+      <stop offset="1" stop-color="#04121f"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#42a5f5"/>
+      <stop offset="1" stop-color="#00bcd4"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <circle cx="270" cy="220" r="130" fill="#2196f3" opacity="0.16"/>
+  <circle cx="1640" cy="250" r="170" fill="#2ed573" opacity="0.12"/>
+  <circle cx="1460" cy="850" r="210" fill="#ffa502" opacity="0.12"/>
+  <circle cx="470" cy="835" r="175" fill="#ec4899" opacity="0.10"/>
+  <g fill="none" stroke="#42a5f5" stroke-opacity="0.22" stroke-width="4">
+    <path d="M250 690c160-115 350-105 520 5s355 125 540 15 340-135 470-70"/>
+    <path d="M180 770c180-95 350-85 510 10s360 125 555 5 365-120 500-35"/>
+  </g>
+  <text x="960" y="395" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="84" font-weight="700" fill="#eaf2ff" opacity="0.9">Thank You</text>
+  <text x="960" y="545" text-anchor="middle" font-family="Outfit, Inter, Arial, sans-serif" font-size="168" font-weight="900" fill="url(#title)" filter="url(#glow)">Cam on!</text>
+  <text x="960" y="655" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="500" fill="#c8dcff" opacity="0.86">Hen gap lai o cuoc thi tiep theo</text>
+  <g transform="translate(795 735)">
+    <rect x="0" y="0" width="330" height="92" rx="24" fill="#ffffff" opacity="0.08" stroke="#42a5f5" stroke-opacity="0.28"/>
+    <text x="165" y="59" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="700" fill="#eaf2ff">Quiz Game</text>
+  </g>
+</svg>
