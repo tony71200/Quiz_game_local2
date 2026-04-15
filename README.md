@@ -1,4 +1,4 @@
-# Quiz Game Local 2
+# Quiz Game Local
 
 Ứng dụng **quiz game chạy trong LAN** với kiến trúc server-authoritative, gồm 2 giao diện:
 - **Host Dashboard** (máy điều khiển cuộc thi)
@@ -62,6 +62,10 @@ npm install
 2. Chạy server:
 ```bash
 npm start
+```
+hoặc
+```bash
+node server.js
 ```
 
 3. Mở Host Dashboard trên máy điều khiển:
