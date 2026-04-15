@@ -65,6 +65,10 @@
   </style>
 </head>
 <body>
+  <div class="lang-toggle">
+    <button id="lang-vn" onclick="setLanguage('vn')">VN</button>
+    <button id="lang-en" onclick="setLanguage('en')">EN</button>
+  </div>
   <svg style="position:absolute;width:0;height:0;">
     <defs>
       <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -81,16 +85,16 @@
       <div id="screen-join" class="animate-fade-in-up">
         <div class="join-header">
           <h1 class="text-gradient">🎮 Quiz Game</h1>
-          <p>Chọn biểu tượng và nhập tên đội</p>
+          <p id="join-subtitle">Chọn biểu tượng và nhập tên đội</p>
         </div>
         <div id="error-msg" class="error-message"></div>
         <div class="glass-card">
-          <label style="font-weight:600;display:block;margin-bottom:12px;">Chọn biểu tượng đội:</label>
+          <label id="label-choose-icon" style="font-weight:600;display:block;margin-bottom:12px;">Chọn biểu tượng đội:</label>
           <div class="icon-picker" id="icon-picker"></div>
-          <label style="font-weight:600;display:block;margin:16px 0 8px;">Tên đội:</label>
+          <label id="label-team-name" style="font-weight:600;display:block;margin:16px 0 8px;">Tên đội:</label>
           <input type="text" id="team-name-input" class="input-field" placeholder="Nhập tên đội..." maxlength="20">
           <button id="btn-join" class="btn btn-primary btn-lg mt-3" style="width:100%">
-            🚀 Tham gia
+            <span id="btn-join-text">🚀 Tham gia</span>
           </button>
         </div>
       </div>
@@ -101,17 +105,17 @@
           <span class="badge-icon" id="my-icon"></span>
           <div>
             <div class="badge-name" id="my-name"></div>
-            <div style="color:var(--text-secondary);font-size:0.85rem;">Đã kết nối</div>
+            <div id="connected-status" style="color:var(--text-secondary);font-size:0.85rem;">Đã kết nối</div>
           </div>
         </div>
         <div class="waiting-animation">
           <div style="font-size:3rem;">⏳</div>
           <div class="waiting-text">
-            Chờ host bắt đầu trò chơi
+            <span id="lobby-wait-text">Chờ host bắt đầu trò chơi</span>
             <span class="waiting-dots"><span>.</span><span>.</span><span>.</span></span>
           </div>
           <div class="mt-2" style="color:var(--text-muted);font-size:0.85rem;">
-            <span id="lobby-team-count">0</span> đội đã tham gia
+            <span id="lobby-team-count">0</span> <span id="lobby-team-count-suffix">đội đã tham gia</span>
           </div>
         </div>
       </div>
@@ -151,9 +155,9 @@
         <div class="waiting-animation" style="padding:20px 0;">
           <div style="font-size:3rem;">✅</div>
           <div class="waiting-text" style="font-size:1.1rem;font-weight:600;color:var(--text-primary);">
-            Đã gửi câu trả lời
+            <span id="wait-submitted-title">Đã gửi câu trả lời</span>
           </div>
-          <div style="color:var(--text-secondary);margin-top:8px;">Chờ hết thời gian...</div>
+          <div id="wait-submitted-subtitle" style="color:var(--text-secondary);margin-top:8px;">Chờ hết thời gian...</div>
         </div>
       </div>
 
@@ -163,7 +167,7 @@
         <h2 id="result-text" style="font-size:1.8rem;margin-bottom:12px;">Chính xác!</h2>
         <div class="score-pop text-gradient" id="result-score">+100</div>
         <div class="total-score-display mt-3">
-          Tổng điểm: <span class="score-number" id="result-total-score">0</span>
+          <span id="result-total-label">Tổng điểm:</span> <span class="score-number" id="result-total-score">0</span>
         </div>
       </div>
 
@@ -171,9 +175,9 @@
       <div id="screen-scoreboard-wait" style="display:none">
         <div class="waiting-animation">
           <div style="font-size:3rem;">🏆</div>
-          <div class="waiting-text">Đang hiển thị bảng điểm...</div>
+          <div id="scoreboard-wait-text" class="waiting-text">Đang hiển thị bảng điểm...</div>
           <div class="total-score-display mt-2">
-            Điểm hiện tại: <span class="score-number" id="wait-total-score">0</span>
+            <span id="current-score-label">Điểm hiện tại:</span> <span class="score-number" id="wait-total-score">0</span>
           </div>
         </div>
       </div>
@@ -182,25 +186,25 @@
       <div id="screen-eliminated" style="display:none">
         <div class="eliminated-screen">
           <div class="skull">💀</div>
-          <h2 style="color:var(--accent-red);margin-bottom:12px;">Bạn đã bị loại</h2>
-          <p style="color:var(--text-secondary);">Cảm ơn bạn đã tham gia!</p>
+        <h2 id="eliminated-title" style="color:var(--accent-red);margin-bottom:12px;">Bạn đã bị loại</h2>
+          <p id="eliminated-subtitle" style="color:var(--text-secondary);">Cảm ơn bạn đã tham gia!</p>
         </div>
       </div>
 
       <!-- ═══════ FINAL SCREEN ═══════ -->
       <div id="screen-final" style="display:none;text-align:center;">
         <div style="font-size:4rem;margin-bottom:16px;">🎉</div>
-        <h2 class="text-gradient" style="font-size:1.8rem;margin-bottom:12px;">Trò chơi kết thúc!</h2>
+        <h2 id="final-title" class="text-gradient" style="font-size:1.8rem;margin-bottom:12px;">Trò chơi kết thúc!</h2>
         <div class="total-score-display">
-          Điểm cuối cùng: <span class="score-number" id="final-total-score">0</span>
+          <span id="final-score-label">Điểm cuối cùng:</span> <span class="score-number" id="final-total-score">0</span>
         </div>
       </div>
 
       <!-- ═══════ THANK YOU SCREEN ═══════ -->
       <div id="screen-thankyou" style="display:none;text-align:center;">
         <div style="font-size:4rem;margin-bottom:16px;">🙏</div>
-        <h2 class="text-gradient" style="font-size:1.8rem;margin-bottom:12px;">Cảm ơn bạn!</h2>
-        <p style="color:var(--text-secondary);">Hẹn gặp lại ở cuộc thi tiếp theo!</p>
+        <h2 id="thankyou-title" class="text-gradient" style="font-size:1.8rem;margin-bottom:12px;">Cảm ơn bạn!</h2>
+        <p id="thankyou-subtitle" style="color:var(--text-secondary);">Hẹn gặp lại ở cuộc thi tiếp theo!</p>
       </div>
 
     </div>
@@ -211,6 +215,7 @@
   <script>
     // ── State ───────────────────────────────────
     const socket = io();
+    let currentLang = localStorage.getItem('quiz_lang') || 'vn';
     let myTeam = null;
     let myTeamId = null;
     let myTotalScore = 0;
@@ -220,6 +225,98 @@
     let pendingResult = null; // Store result until timer ends
     let currentScreen = 'screen-join';
     let lastQuestionState = null; // Track question info for wait screen
+
+    const i18n = {
+      vn: {
+        joinSubtitle: 'Chọn biểu tượng và nhập tên đội',
+        chooseIcon: 'Chọn biểu tượng đội:',
+        teamName: 'Tên đội:',
+        teamNamePlaceholder: 'Nhập tên đội...',
+        joinBtn: '🚀 Tham gia',
+        waitingHost: 'Chờ host bắt đầu trò chơi',
+        teamsJoinedSuffix: 'đội đã tham gia',
+        submittedTitle: 'Đã gửi câu trả lời',
+        submittedSubtitle: 'Chờ hết thời gian...',
+        eliminatedTitle: 'Bạn đã bị loại',
+        eliminatedSubtitle: 'Cảm ơn bạn đã tham gia!',
+        finalTitle: 'Trò chơi kết thúc!',
+        finalScoreLabel: 'Điểm cuối cùng:',
+        thankTitle: 'Cảm ơn bạn!',
+        thankSubtitle: 'Hẹn gặp lại ở cuộc thi tiếp theo!',
+        enterTeamName: 'Vui lòng nhập tên đội!',
+        chooseTeamIcon: 'Vui lòng chọn biểu tượng đội!',
+        connected: 'Đã kết nối',
+        round: 'Vòng',
+        qPrefix: 'C',
+        answerSentWait: 'Đang hiển thị bảng điểm...',
+        currentScore: 'Điểm hiện tại:',
+        correct: 'Chính xác!',
+        wrong: 'Sai rồi!',
+        totalScore: 'Tổng điểm:'
+      },
+      en: {
+        joinSubtitle: 'Choose an icon and enter your team name',
+        chooseIcon: 'Choose team icon:',
+        teamName: 'Team name:',
+        teamNamePlaceholder: 'Enter team name...',
+        joinBtn: '🚀 Join',
+        waitingHost: 'Waiting for host to start',
+        teamsJoinedSuffix: 'teams joined',
+        submittedTitle: 'Answer submitted',
+        submittedSubtitle: 'Waiting for timer to end...',
+        eliminatedTitle: 'You are eliminated',
+        eliminatedSubtitle: 'Thanks for joining!',
+        finalTitle: 'Game finished!',
+        finalScoreLabel: 'Final score:',
+        thankTitle: 'Thank you!',
+        thankSubtitle: 'See you in the next quiz!',
+        enterTeamName: 'Please enter a team name!',
+        chooseTeamIcon: 'Please choose a team icon!',
+        connected: 'Connected',
+        round: 'Round',
+        qPrefix: 'Q',
+        answerSentWait: 'Showing scoreboard...',
+        currentScore: 'Current score:',
+        correct: 'Correct!',
+        wrong: 'Wrong!',
+        totalScore: 'Total score:'
+      }
+    };
+
+    function t(key) {
+      return i18n[currentLang][key] || i18n.vn[key] || key;
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang === 'en' ? 'en' : 'vn';
+      localStorage.setItem('quiz_lang', currentLang);
+      document.getElementById('lang-vn').classList.toggle('active', currentLang === 'vn');
+      document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
+      applyLanguageUI();
+      if (lastQuestionState?.question) renderClientQuestion(lastQuestionState);
+    }
+
+    function applyLanguageUI() {
+      document.getElementById('join-subtitle').textContent = t('joinSubtitle');
+      document.getElementById('label-choose-icon').textContent = t('chooseIcon');
+      document.getElementById('label-team-name').textContent = t('teamName');
+      document.getElementById('team-name-input').placeholder = t('teamNamePlaceholder');
+      document.getElementById('btn-join-text').textContent = t('joinBtn');
+      document.getElementById('lobby-wait-text').textContent = t('waitingHost');
+      document.getElementById('connected-status').textContent = t('connected');
+      document.getElementById('lobby-team-count-suffix').textContent = t('teamsJoinedSuffix');
+      document.getElementById('wait-submitted-title').textContent = t('submittedTitle');
+      document.getElementById('wait-submitted-subtitle').textContent = t('submittedSubtitle');
+      document.getElementById('scoreboard-wait-text').textContent = t('answerSentWait');
+      document.getElementById('current-score-label').textContent = t('currentScore');
+      document.getElementById('result-total-label').textContent = t('totalScore');
+      document.getElementById('eliminated-title').textContent = t('eliminatedTitle');
+      document.getElementById('eliminated-subtitle').textContent = t('eliminatedSubtitle');
+      document.getElementById('final-title').textContent = t('finalTitle');
+      document.getElementById('final-score-label').textContent = t('finalScoreLabel');
+      document.getElementById('thankyou-title').textContent = t('thankTitle');
+      document.getElementById('thankyou-subtitle').textContent = t('thankSubtitle');
+    }
 
     // ── Screen Management ───────────────────────
     const screens = [
@@ -264,12 +361,12 @@
       const errorEl = document.getElementById('error-msg');
 
       if (!name) {
-        errorEl.textContent = 'Vui lòng nhập tên đội!';
+        errorEl.textContent = t('enterTeamName');
         errorEl.style.display = 'block';
         return;
       }
       if (!selectedIcon) {
-        errorEl.textContent = 'Vui lòng chọn biểu tượng đội!';
+        errorEl.textContent = t('chooseTeamIcon');
         errorEl.style.display = 'block';
         return;
       }
@@ -372,8 +469,8 @@
       const q = state.question;
       if (!q) return;
 
-      document.getElementById('c-round-badge').textContent = q.roundName || `Round ${q.roundNumber}`;
-      document.getElementById('c-progress-badge').textContent = `Q ${q.questionNumber}/${q.totalQuestions}`;
+      document.getElementById('c-round-badge').textContent = `${t('round')} ${q.roundNumber}`;
+      document.getElementById('c-progress-badge').textContent = `${t('qPrefix')} ${q.questionNumber}/${q.totalQuestions}`;
 
       const labels = ['A', 'B', 'C', 'D'];
       const btnClasses = ['answer-btn-a', 'answer-btn-b', 'answer-btn-c', 'answer-btn-d'];
@@ -447,8 +544,8 @@
       // Copy question info to wait screen
       if (lastQuestionState?.question) {
         const q = lastQuestionState.question;
-        document.getElementById('w-round-badge').textContent = q.roundName || `Round ${q.roundNumber}`;
-        document.getElementById('w-progress-badge').textContent = `Q ${q.questionNumber}/${q.totalQuestions}`;
+        document.getElementById('w-round-badge').textContent = `${t('round')} ${q.roundNumber}`;
+        document.getElementById('w-progress-badge').textContent = `${t('qPrefix')} ${q.questionNumber}/${q.totalQuestions}`;
       }
       showScreen('screen-wait');
     });
@@ -469,7 +566,7 @@
 
     function showResult(isCorrect, score, totalScore) {
       document.getElementById('result-icon').textContent = isCorrect ? '✅' : '❌';
-      document.getElementById('result-text').textContent = isCorrect ? 'Chính xác!' : 'Sai rồi!';
+      document.getElementById('result-text').textContent = isCorrect ? t('correct') : t('wrong');
       document.getElementById('result-text').style.color = isCorrect ? 'var(--accent-green)' : 'var(--accent-red)';
       document.getElementById('result-score').textContent = isCorrect ? `+${score}` : '+0';
       document.getElementById('result-total-score').textContent = totalScore;
@@ -513,6 +610,8 @@
 
     // ── Init ────────────────────────────────────
     renderIconPicker();
+    applyLanguageUI();
+    setLanguage(currentLang);
   </script>
 </body>
 </html>
