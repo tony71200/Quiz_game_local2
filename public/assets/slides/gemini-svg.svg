@@ -1,0 +1,29 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1920" height="1080" fill="#0a192f"/>
+  
+  <circle cx="200" cy="200" r="150" fill="#112240" opacity="0.6"/>
+  <circle cx="1650" cy="250" r="180" fill="#0e4b50" opacity="0.4"/>
+  <circle cx="250" cy="850" r="200" fill="#1d1d42" opacity="0.5"/>
+  <circle cx="1500" cy="850" r="220" fill="#2d2d1a" opacity="0.4"/>
+
+  <path d="M0 750 Q 480 500 960 750 T 1920 650" stroke="#1d3557" fill="transparent" stroke-width="3"/>
+  <path d="M0 800 Q 480 550 960 800 T 1920 700" stroke="#1d3557" fill="transparent" stroke-width="2"/>
+
+  <text x="50%" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="60" fill="#ccd6f6">Thank You</text>
+
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <text x="50%" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="160" font-weight="bold" fill="#64ffda" filter="url(#glow)">Cảm ơn!</text>
+
+  <text x="50%" y="640" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#8892b0">Hẹn gặp lại ở cuộc thi tiếp theo</text>
+
+  <rect x="810" y="720" width="300" height="80" rx="15" fill="#112240" stroke="#233554" stroke-width="2"/>
+  <text x="50%" y="770" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#ccd6f6">Quiz Game</text>
+</svg>

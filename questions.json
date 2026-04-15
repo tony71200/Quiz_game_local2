@@ -1,7 +1,7 @@
 {
-  "main_slide": "/assets/slides/main_slide.jpg",
-  "summary_slide": "/assets/slides/summary_slide.jpg",
-  "thank_slide": "/assets/slides/thank_slide.svg",
+  "main_slide": "/assets/slides/main_slide.png",
+  "summary_slide": "/assets/slides/summary_slide.png",
+  "thank_slide": "/assets/slides/gemini-svg.svg",
   "rounds": [
     {
       "round": 1,
@@ -9,14 +9,14 @@
       "questions": [
         {
           "id": "r1_q1",
-          "text": "Theo Nghị quyết đại hội XIV, mối quan hệ giữa giáo dục đào tạo với khao học công nghệ được định hướng như thế nào?",
+          "text": "Theo Nghị quyết đại hội XIV, mối quan hệ giữa giáo dục đào tạo với khoa học công nghệ được định hướng như thế nào?",
           "answers": ["KHCN là công cụ hỗ trợ quản lý trong ngành giáo dục", 
                       "Là hai lĩnh vực trọng điểm, cần đầu tư phát triển theo chiến lược riêng", 
                       "GDĐT gắn chặt với KHCN và đổi mới sáng tạo, hình thành hệ sinh thái tri thức", 
                       "GDĐT chủ yếu phục vụ nhu cầu quản lý nhà nước, còn KHCN phục vụ sản xuất, phát triển kinh tế."],
           "correct_index": 2,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide1.png"
         },
         {
           "id": "r1_q2",
@@ -27,7 +27,7 @@
                       "Ứng dụng KHCN trong đổi mới GDĐT"],
           "correct_index": 0,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide2.png"
         },
         {
           "id": "r1_q3",
@@ -38,7 +38,7 @@
                       "45-50%"],
           "correct_index": 1,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide3.png"
         },
         {
           "id": "r1_q4",
@@ -49,7 +49,7 @@
                       "Trên 60%"],
           "correct_index": 2,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide4.png"
         }
       ]
     },
@@ -66,7 +66,7 @@
                       "Giảm tỷ lệ hộ nghèo đa chiều 1-1,5 điểm/năm"],
           "correct_index": 1,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide5.png"
         },
         {
           "id": "r2_q2",
@@ -77,7 +77,7 @@
                       "Tỷ lệ đô thị hóa >50%"],
           "correct_index": 2,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide6.png"
         }
       ]
     },
@@ -94,7 +94,7 @@
                       "Quyết liệt đổi mới cơ chế quản lý, tài chính cho các viện nghiên cứu"],
           "correct_index": 1,
           "time_limit": 30,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": "/assets/slides/slide7.png"
         }
       ]
     },
@@ -108,7 +108,7 @@
           "answers": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"],
           "correct_index": 2,
           "time_limit": 20,
-          "slide_image": "/assets/slides/placeholder.png"
+          "slide_image": ""
         }
       ]
     }
