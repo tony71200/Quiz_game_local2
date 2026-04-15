@@ -40,6 +40,10 @@
   </style>
 </head>
 <body class="host-body">
+  <div class="lang-toggle">
+    <button id="lang-vn" onclick="setLanguage('vn')">VN</button>
+    <button id="lang-en" onclick="setLanguage('en')">EN</button>
+  </div>
   <!-- SVG Defs for timer gradient -->
   <svg style="position:absolute;width:0;height:0;">
     <defs>
@@ -78,9 +82,9 @@
   <div id="phase-thankyou" class="fullscreen-phase thankyou-slide" onclick="advanceThankYou()">
     <div class="fs-content">
       <div class="thankyou-emoji">🙏</div>
-      <div class="thankyou-title text-gradient">Cảm ơn!</div>
-      <div class="thankyou-subtitle">Cảm ơn tất cả các đội đã tham gia cuộc thi.<br>Hẹn gặp lại!</div>
-      <div class="main-slide-hint" style="bottom:30px;">Nhấn để quay về Lobby →</div>
+      <div class="thankyou-title text-gradient" id="thankyou-title">Cảm ơn!</div>
+      <div class="thankyou-subtitle" id="thankyou-subtitle">Cảm ơn tất cả các đội đã tham gia cuộc thi.<br>Hẹn gặp lại!</div>
+      <div class="main-slide-hint" id="thankyou-hint" style="bottom:30px;">Nhấn để quay về Lobby →</div>
     </div>
     <div id="confetti-container" class="confetti-container"></div>
     <button class="fs-next-btn" onclick="event.stopPropagation(); advanceThankYou();">🔄</button>
@@ -89,24 +93,24 @@
   <!-- ═══════ LOBBY PHASE ═══════ -->
   <div id="phase-lobby" class="phase-container">
     <div class="host-header">
-      <h1 class="text-gradient">🎮 Quiz Game</h1>
-      <p class="subtitle">Quét mã QR để tham gia · Chờ các đội kết nối</p>
+      <h1 class="text-gradient" id="title-game">🎮 Quiz Game</h1>
+      <p class="subtitle" id="subtitle-lobby">Quét mã QR để tham gia · Chờ các đội kết nối</p>
     </div>
     <div class="lobby-grid">
       <div class="lobby-left">
         <div class="glass-card qr-container" id="qr-section">
-          <h3 style="margin-bottom:16px;">📱 Quét QR để tham gia</h3>
+          <h3 id="label-qr" style="margin-bottom:16px;">📱 Quét QR để tham gia</h3>
           <img id="qr-image" alt="QR Code" style="display:none;">
           <p id="qr-url" class="qr-url"></p>
           <div style="margin-top:16px;width:100%;">
-            <label style="font-size:0.85rem;color:var(--text-secondary);">Chọn IP:</label>
+            <label id="label-ip" style="font-size:0.85rem;color:var(--text-secondary);">Chọn IP:</label>
             <select id="ip-selector" class="ip-selector" style="margin-top:6px;width:100%;"></select>
           </div>
         </div>
       </div>
       <div class="lobby-right">
         <div class="glass-card">
-          <h3 style="margin-bottom:16px;">👥 Các đội (<span id="team-count">0</span>/4)</h3>
+          <h3 id="label-teams" style="margin-bottom:16px;">👥 Các đội (<span id="team-count">0</span>/4)</h3>
           <div id="team-slots" class="team-slots">
             <div class="team-slot"><span class="slot-empty">Chờ đội 1...</span></div>
             <div class="team-slot"><span class="slot-empty">Chờ đội 2...</span></div>
@@ -115,7 +119,7 @@
           </div>
         </div>
         <button id="btn-start-game" class="btn btn-primary btn-lg" style="width:100%" disabled>
-          🚀 Bắt đầu trò chơi
+          <span id="btn-start-text">🚀 Bắt đầu trò chơi</span>
         </button>
       </div>
     </div>
@@ -146,7 +150,7 @@
   <div id="phase-reveal" class="phase-container">
     <div class="host-content">
       <div class="question-header">
-        <h2 class="text-gradient" style="font-size:1.8rem;">✅ Kết quả</h2>
+        <h2 id="label-result-title" class="text-gradient" style="font-size:1.8rem;">✅ Kết quả</h2>
       </div>
       <div class="question-text" id="reveal-question-text"></div>
       <div class="host-answer-grid" id="reveal-answers"></div>
@@ -157,7 +161,7 @@
   <!-- ═══════ SCOREBOARD PHASE ═══════ -->
   <div id="phase-scoreboard" class="phase-container">
     <div class="host-content">
-      <h2 class="text-gradient text-center" style="font-size:2rem;margin-bottom:32px;">🏆 Bảng xếp hạng</h2>
+      <h2 id="label-scoreboard-title" class="text-gradient text-center" style="font-size:2rem;margin-bottom:32px;">🏆 Bảng xếp hạng</h2>
       <div class="score-chart-container" id="score-chart"></div>
       <ul class="scoreboard-list mt-3" id="scoreboard-list"></ul>
     </div>
@@ -166,7 +170,7 @@
   <!-- ═══════ ELIMINATION PHASE ═══════ -->
   <div id="phase-elimination" class="phase-container">
     <div class="host-content text-center">
-      <h2 class="text-gradient" style="font-size:2rem;margin-bottom:32px;">⚔️ Vòng loại</h2>
+      <h2 id="label-elimination-title" class="text-gradient" style="font-size:2rem;margin-bottom:32px;">⚔️ Vòng loại</h2>
       <ul class="scoreboard-list" id="elimination-list"></ul>
     </div>
   </div>
@@ -174,8 +178,8 @@
   <!-- ═══════ FINAL PHASE ═══════ -->
   <div id="phase-final" class="phase-container">
     <div class="host-content text-center">
-      <h2 style="font-size:2.5rem;margin-bottom:12px;">🎉 Kết thúc!</h2>
-      <p style="color:var(--text-secondary);font-size:1.1rem;margin-bottom:24px;">Chúc mừng đội chiến thắng!</p>
+      <h2 id="label-final-title" style="font-size:2.5rem;margin-bottom:12px;">🎉 Kết thúc!</h2>
+      <p id="label-final-subtitle" style="color:var(--text-secondary);font-size:1.1rem;margin-bottom:24px;">Chúc mừng đội chiến thắng!</p>
       <div class="podium" id="podium"></div>
     </div>
   </div>
@@ -195,6 +199,7 @@
     // ── Socket & State ──────────────────────────
     const socket = io();
     let currentPhase = 'main_slide';
+    let currentLang = localStorage.getItem('quiz_lang') || 'vn';
     let gameConfig = null;
     let slideImages = {
       main_slide: '/assets/slides/main_slide.jpg',
@@ -234,6 +239,124 @@
     const btnReset = document.getElementById('btn-reset');
     const ctrlPhaseLabel = document.getElementById('ctrl-phase-label');
     const controlBar = document.getElementById('control-bar');
+
+    const i18n = {
+      vn: {
+        lobbySubtitle: 'Quét mã QR để tham gia · Chờ các đội kết nối',
+        qrScan: '📱 Quét QR để tham gia',
+        chooseIp: 'Chọn IP:',
+        teamsLabel: '👥 Các đội',
+        teamWaiting: 'Chờ đội {n}...',
+        startGame: '🚀 Bắt đầu trò chơi',
+        resultTitle: '✅ Kết quả',
+        scoreboardTitle: '🏆 Bảng xếp hạng',
+        eliminationTitle: '⚔️ Vòng loại',
+        finalTitle: '🎉 Kết thúc!',
+        finalSubtitle: 'Chúc mừng đội chiến thắng!',
+        thankTitle: 'Cảm ơn!',
+        thankSubtitle: 'Cảm ơn tất cả các đội đã tham gia cuộc thi.<br>Hẹn gặp lại!',
+        thankHint: 'Nhấn để quay về Lobby →',
+        phaseMainSlide: 'MAIN SLIDE',
+        phaseLobby: 'LOBBY',
+        phaseQuestion: 'QUESTION',
+        phaseReveal: 'REVEAL',
+        phaseScoreboard: 'SCOREBOARD',
+        phaseSlide: 'SLIDE',
+        phaseElimination: 'ELIMINATION',
+        phaseFinal: 'FINAL',
+        phaseSummary: 'SUMMARY',
+        phaseThankyou: 'THANK YOU',
+        nextToBoard: '→ Bảng điểm',
+        nextToSlide: '→ Slide',
+        nextToRound: '→ Vòng tiếp',
+        nextToSummary: '→ Tổng kết',
+        round: 'Vòng',
+        questionShort: 'C',
+        points: 'điểm',
+        resetConfirm: 'Bạn có chắc muốn reset trò chơi?',
+        pauseTitle: 'Tạm dừng',
+        resumeTitle: 'Tiếp tục',
+        qPrefix: 'C',
+        answerA: 'A',
+        answerB: 'B',
+        answerC: 'C',
+        answerD: 'D'
+      },
+      en: {
+        lobbySubtitle: 'Scan QR to join · Waiting for teams',
+        qrScan: '📱 Scan QR to join',
+        chooseIp: 'Choose IP:',
+        teamsLabel: '👥 Teams',
+        teamWaiting: 'Waiting team {n}...',
+        startGame: '🚀 Start game',
+        resultTitle: '✅ Results',
+        scoreboardTitle: '🏆 Scoreboard',
+        eliminationTitle: '⚔️ Elimination',
+        finalTitle: '🎉 Finished!',
+        finalSubtitle: 'Congrats to the winner!',
+        thankTitle: 'Thank you!',
+        thankSubtitle: 'Thanks to all teams for joining.<br>See you next time!',
+        thankHint: 'Tap to return to Lobby →',
+        phaseMainSlide: 'MAIN SLIDE',
+        phaseLobby: 'LOBBY',
+        phaseQuestion: 'QUESTION',
+        phaseReveal: 'REVEAL',
+        phaseScoreboard: 'SCOREBOARD',
+        phaseSlide: 'SLIDE',
+        phaseElimination: 'ELIMINATION',
+        phaseFinal: 'FINAL',
+        phaseSummary: 'SUMMARY',
+        phaseThankyou: 'THANK YOU',
+        nextToBoard: '→ Scoreboard',
+        nextToSlide: '→ Slide',
+        nextToRound: '→ Next round',
+        nextToSummary: '→ Summary',
+        round: 'Round',
+        questionShort: 'Q',
+        points: 'pts',
+        resetConfirm: 'Do you want to reset the game?',
+        pauseTitle: 'Pause',
+        resumeTitle: 'Resume',
+        qPrefix: 'Q',
+        answerA: 'A',
+        answerB: 'B',
+        answerC: 'C',
+        answerD: 'D'
+      }
+    };
+
+    function t(key, vars = {}) {
+      const raw = i18n[currentLang][key] || i18n.vn[key] || key;
+      return Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, v), raw);
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang === 'en' ? 'en' : 'vn';
+      localStorage.setItem('quiz_lang', currentLang);
+      document.getElementById('lang-vn').classList.toggle('active', currentLang === 'vn');
+      document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
+      updateLanguageUI();
+      if (currentPhase === 'lobby' || currentPhase === 'main_slide') {
+        renderTeamSlots();
+      }
+    }
+
+    function updateLanguageUI() {
+      document.getElementById('subtitle-lobby').innerHTML = t('lobbySubtitle');
+      document.getElementById('label-qr').textContent = t('qrScan');
+      document.getElementById('label-ip').textContent = t('chooseIp');
+      document.getElementById('label-teams').innerHTML = `${t('teamsLabel')} (<span id="team-count">${teams.length}</span>/4)`;
+      document.getElementById('btn-start-text').textContent = t('startGame');
+      document.getElementById('label-result-title').textContent = t('resultTitle');
+      document.getElementById('label-scoreboard-title').textContent = t('scoreboardTitle');
+      document.getElementById('label-elimination-title').textContent = t('eliminationTitle');
+      document.getElementById('label-final-title').textContent = t('finalTitle');
+      document.getElementById('label-final-subtitle').textContent = t('finalSubtitle');
+      document.getElementById('thankyou-title').textContent = t('thankTitle');
+      document.getElementById('thankyou-subtitle').innerHTML = t('thankSubtitle');
+      document.getElementById('thankyou-hint').textContent = t('thankHint');
+      updateControlButtons();
+    }
 
     function renderImageSlide(container, imagePath, label, fallbackHtml = null) {
       if (!container) return;
@@ -294,7 +417,19 @@
       // Hide control bar during fullscreen phases
       controlBar.classList.toggle('control-hidden', isFullscreen);
 
-      ctrlPhaseLabel.textContent = phase.toUpperCase().replace('_', ' ');
+      const phaseLabels = {
+        main_slide: t('phaseMainSlide'),
+        lobby: t('phaseLobby'),
+        question: t('phaseQuestion'),
+        reveal: t('phaseReveal'),
+        scoreboard: t('phaseScoreboard'),
+        slide: t('phaseSlide'),
+        elimination: t('phaseElimination'),
+        final: t('phaseFinal'),
+        summary: t('phaseSummary'),
+        thankyou: t('phaseThankyou')
+      };
+      ctrlPhaseLabel.textContent = phaseLabels[phase] || phase.toUpperCase().replace('_', ' ');
       updateControlButtons();
     }
 
@@ -305,10 +440,10 @@
       const showNext = ['reveal', 'scoreboard', 'elimination', 'final'].includes(currentPhase);
       btnNext.classList.toggle('hidden', !showNext);
 
-      if (currentPhase === 'reveal') btnNext.textContent = '→ Bảng điểm';
-      else if (currentPhase === 'scoreboard') btnNext.textContent = '→ Slide';
-      else if (currentPhase === 'elimination') btnNext.textContent = '→ Vòng tiếp';
-      else if (currentPhase === 'final') btnNext.textContent = '→ Tổng kết';
+      if (currentPhase === 'reveal') btnNext.textContent = t('nextToBoard');
+      else if (currentPhase === 'scoreboard') btnNext.textContent = t('nextToSlide');
+      else if (currentPhase === 'elimination') btnNext.textContent = t('nextToRound');
+      else if (currentPhase === 'final') btnNext.textContent = t('nextToSummary');
     }
 
     // ── Fullscreen Slide Advance Functions ──────
@@ -403,7 +538,7 @@
             </div>
           `);
         } else {
-          slots.push(`<div class="team-slot"><span class="slot-empty">Chờ đội ${i+1}...</span></div>`);
+          slots.push(`<div class="team-slot"><span class="slot-empty">${t('teamWaiting', { n: i + 1 })}</span></div>`);
         }
       }
       slotsContainer.innerHTML = slots.join('');
@@ -462,12 +597,12 @@
       const q = state.question;
       if (!q) return;
 
-      document.getElementById('q-round-badge').textContent = q.roundName || `Round ${q.roundNumber}`;
-      document.getElementById('q-progress-badge').textContent = `Q ${q.questionNumber}/${q.totalQuestions}`;
+      document.getElementById('q-round-badge').textContent = `${t('round')} ${q.roundNumber}`;
+      document.getElementById('q-progress-badge').textContent = `${t('qPrefix')} ${q.questionNumber}/${q.totalQuestions}`;
       document.getElementById('host-question-text').textContent = q.questionText;
 
       const answersHtml = q.answers.map((ans, i) => {
-        const labels = ['A', 'B', 'C', 'D'];
+        const labels = [t('answerA'), t('answerB'), t('answerC'), t('answerD')];
         const classes = ['answer-btn-a', 'answer-btn-b', 'answer-btn-c', 'answer-btn-d'];
         return `
           <div class="host-answer-tile ${classes[i]}">
@@ -531,7 +666,7 @@
 
       const stats = state.answerStats || [];
       const answersHtml = q.answers.map((ans, i) => {
-        const labels = ['A', 'B', 'C', 'D'];
+        const labels = [t('answerA'), t('answerB'), t('answerC'), t('answerD')];
         const classes = ['answer-btn-a', 'answer-btn-b', 'answer-btn-c', 'answer-btn-d'];
         const stat = stats[i] || {};
         const isCorrect = i === state.correctIndex;
@@ -549,7 +684,7 @@
       document.getElementById('reveal-answers').innerHTML = answersHtml;
 
       const barHtml = stats.map((stat, i) => {
-        const labels = ['A', 'B', 'C', 'D'];
+        const labels = [t('answerA'), t('answerB'), t('answerC'), t('answerD')];
         const fillClasses = ['bar-fill-a', 'bar-fill-b', 'bar-fill-c', 'bar-fill-d'];
         return `
           <div class="bar-item">
@@ -596,7 +731,7 @@
             <span class="scoreboard-icon">${t.icon}</span>
             <span class="scoreboard-name">${t.name}</span>
           </div>
-          <span class="scoreboard-score">${t.score} pts</span>
+          <span class="scoreboard-score">${t.score} ${i18n[currentLang].points}</span>
         </li>
       `).join('');
       document.getElementById('scoreboard-list').innerHTML = listHtml;
@@ -625,7 +760,7 @@
             <div class="scoreboard-team-info">
               <span class="scoreboard-name">${t.name}</span>
             </div>
-            <span class="scoreboard-score">${t.score} pts</span>
+            <span class="scoreboard-score">${t.score} ${i18n[currentLang].points}</span>
             <span style="font-size:1.2rem">${isEliminated ? '❌' : '✅'}</span>
           </li>
         `;
@@ -649,7 +784,7 @@
           <div class="podium-medal">${medals[t.rank] || ''}</div>
           <div class="podium-icon">${t.icon}</div>
           <div class="podium-name">${t.name}</div>
-          <div class="podium-score-val">${t.score} pts</div>
+          <div class="podium-score-val">${t.score} ${i18n[currentLang].points}</div>
           <div class="podium-stand ${standClasses[t.rank]}">${t.rank + 1}</div>
         </div>
       `).join('');
@@ -687,7 +822,7 @@
     socket.on('game_paused', ({ paused }) => {
       isPaused = paused;
       btnPause.textContent = paused ? '▶' : '⏸';
-      btnPause.title = paused ? 'Tiếp tục' : 'Tạm dừng';
+      btnPause.title = paused ? t('resumeTitle') : t('pauseTitle');
     });
 
     // ── Control Buttons ─────────────────────────
@@ -712,7 +847,7 @@
     });
 
     btnReset.addEventListener('click', () => {
-      if (confirm('Bạn có chắc muốn reset trò chơi?')) {
+      if (confirm(t('resetConfirm'))) {
         socket.emit('host_action', { action: 'reset' });
       }
     });
@@ -730,6 +865,8 @@
     socket.on('host_error', ({ message }) => {
       alert(message);
     });
+
+    setLanguage(currentLang);
   </script>
 </body>
 </html>

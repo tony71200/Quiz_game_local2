@@ -158,6 +158,10 @@ function getPhaseSlideImage(phase) {
   return null;
 }
 
+function hasQuestionSlideImage(question) {
+  return typeof question?.slide_image === 'string' && question.slide_image.trim().length > 0;
+}
+
 // ── Scoring ─────────────────────────────────────────────────
 function calculateScore(timeLeft, totalTime) {
   // SKILL.md formula: score = 40 + 60 * (time_left / total_time)
@@ -349,8 +353,13 @@ function showScoreboard() {
 }
 
 function showSlide() {
+  if (!hasQuestionSlideImage(gameState.currentQuestion)) {
+    nextQuestion();
+    return;
+  }
+
   gameState.phase = 'slide';
-  const slideImage = gameState.currentQuestion?.slide_image || null;
+  const slideImage = gameState.currentQuestion.slide_image.trim();
   broadcastGameState({ slideImage });
   saveState();
   console.log('[Phase] → SLIDE');

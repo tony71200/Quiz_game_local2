@@ -97,6 +97,39 @@ body::before {
   z-index: 0;
 }
 
+/* ── Language Toggle ──────────────────────────── */
+.lang-toggle {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 10000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(33, 150, 243, 0.35);
+  background: rgba(5, 13, 31, 0.8);
+  backdrop-filter: blur(12px);
+}
+
+.lang-toggle button {
+  border: none;
+  min-width: 46px;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.lang-toggle button.active {
+  color: #fff;
+  background: var(--gradient-primary);
+}
+
 /* ── Typography ────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
