@@ -187,6 +187,11 @@ function calculateScore(timeLeft, totalTime) {
   return Math.floor(config.scoring.baseScore + config.scoring.timeBonus * (timeLeft / totalTime));
 }
 
+function calculateTieBreakScore(timeLeft, totalTime) {
+  // Tie-break uses a 50-point scale (0 → 50), still based on remaining time.
+  return Math.floor(50 * (timeLeft / totalTime));
+}
+
 // ── Timer ───────────────────────────────────────────────────
 function startTimer() {
   clearTimer();
@@ -316,15 +321,16 @@ function endQuestion() {
 
     if (submission && submission.answerIndex === shuffled.correctIndex) {
       isCorrect = true;
-      scoreGained = calculateScore(submission.timeLeft, gameState.totalTime);
+      scoreGained = tieBreak?.active
+        ? calculateTieBreakScore(submission.timeLeft, gameState.totalTime)
+        : calculateScore(submission.timeLeft, gameState.totalTime);
     }
 
     if (tieBreak?.active) {
       tieBreak.scores[team.id] = (tieBreak.scores[team.id] || 0) + scoreGained;
-    } else {
-      team.score += scoreGained;
-      team.roundScore += scoreGained;
     }
+    team.score += scoreGained;
+    team.roundScore += scoreGained;
 
     // Personal result → sent to each client ONLY NOW (after timer ends)
     if (team.socketId) {
