@@ -33,6 +33,39 @@
       text-align: center; max-width: 800px; margin: 20px auto; line-height: 1.4;
     }
     .host-content { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+    .rules-card { max-width: 980px; margin: 0 auto; }
+    .rules-summary { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 16px; text-align: center; }
+    .rules-points { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .rules-points li {
+      padding: 12px 14px; border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border-left: 4px solid rgba(33,150,243,0.7);
+      color: var(--text-primary);
+    }
+    .rules-animation {
+      margin: 20px auto 6px;
+      min-height: 88px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .rules-team-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255,255,255,0.2);
+      animation: floatRuleChip 2.4s ease-in-out infinite;
+    }
+    .rules-team-chip .icon { font-size: 1.3rem; }
+    .rules-team-chip .name { font-weight: 700; font-size: 0.9rem; }
+    @keyframes floatRuleChip {
+      0%, 100% { transform: translateY(0); opacity: 0.92; }
+      50% { transform: translateY(-8px); opacity: 1; }
+    }
     @media (max-width: 768px) {
       .lobby-grid { grid-template-columns: 1fr; }
       .question-text { font-size: 1.2rem; }
@@ -125,6 +158,21 @@
     </div>
   </div>
 
+  <!-- ═══════ RULES PHASE ═══════ -->
+  <div id="phase-rules" class="phase-container">
+    <div class="host-content">
+      <div class="glass-card rules-card">
+        <h2 class="text-gradient text-center" id="rules-title" style="font-size:2rem;margin-bottom:10px;">📘 Luật chơi</h2>
+        <p id="rules-summary" class="rules-summary"></p>
+        <ul id="rules-points" class="rules-points"></ul>
+        <div id="rules-animation" class="rules-animation"></div>
+        <button id="btn-rules-start" class="btn btn-primary btn-lg mt-3" style="width:100%">
+          <span id="btn-rules-start-text">🚀 Bắt đầu</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════ QUESTION PHASE ═══════ -->
   <div id="phase-question" class="phase-container">
     <div class="host-content">
@@ -211,6 +259,7 @@
     // ── DOM Refs ────────────────────────────────
     const normalPhases = {
       lobby: document.getElementById('phase-lobby'),
+      rules: document.getElementById('phase-rules'),
       question: document.getElementById('phase-question'),
       reveal: document.getElementById('phase-reveal'),
       scoreboard: document.getElementById('phase-scoreboard'),
@@ -233,6 +282,7 @@
     };
 
     const btnStart = document.getElementById('btn-start-game');
+    const btnRulesStart = document.getElementById('btn-rules-start');
     const btnPause = document.getElementById('btn-pause');
     const btnSkip = document.getElementById('btn-skip');
     const btnNext = document.getElementById('btn-next');
@@ -246,8 +296,13 @@
         qrScan: '📱 Quét QR để tham gia',
         chooseIp: 'Chọn IP:',
         teamsLabel: '👥 Các đội',
+        rulesTitle: '📘 Luật chơi',
+        rulesSummary: 'Các đội sẽ trải qua {rounds} vòng với tổng {questions} câu hỏi.',
+        rulesRoundLine: 'Vòng {round}: chọn ra {advance} đội đi tiếp.',
+        rulesFallbackLine: 'Đi tiếp theo thứ hạng điểm sau mỗi vòng.',
+        rulesStart: '🚀 Bắt đầu',
         teamWaiting: 'Chờ đội {n}...',
-        startGame: '🚀 Bắt đầu trò chơi',
+        startGame: '📘 Xem luật chơi',
         resultTitle: '✅ Kết quả',
         scoreboardTitle: '🏆 Bảng xếp hạng',
         eliminationTitle: '⚔️ Vòng loại',
@@ -258,6 +313,7 @@
         thankHint: 'Nhấn để quay về Lobby →',
         phaseMainSlide: 'MAIN SLIDE',
         phaseLobby: 'LOBBY',
+        phaseRules: 'RULES',
         phaseQuestion: 'QUESTION',
         phaseReveal: 'REVEAL',
         phaseScoreboard: 'SCOREBOARD',
@@ -287,8 +343,13 @@
         qrScan: '📱 Scan QR to join',
         chooseIp: 'Choose IP:',
         teamsLabel: '👥 Teams',
+        rulesTitle: '📘 Rules',
+        rulesSummary: 'Teams will play {rounds} rounds with {questions} total questions.',
+        rulesRoundLine: 'Round {round}: advance top {advance} team(s).',
+        rulesFallbackLine: 'Advancement is based on score ranking after each round.',
+        rulesStart: '🚀 Start',
         teamWaiting: 'Waiting team {n}...',
-        startGame: '🚀 Start game',
+        startGame: '📘 Show rules',
         resultTitle: '✅ Results',
         scoreboardTitle: '🏆 Scoreboard',
         eliminationTitle: '⚔️ Elimination',
@@ -299,6 +360,7 @@
         thankHint: 'Tap to return to Lobby →',
         phaseMainSlide: 'MAIN SLIDE',
         phaseLobby: 'LOBBY',
+        phaseRules: 'RULES',
         phaseQuestion: 'QUESTION',
         phaseReveal: 'REVEAL',
         phaseScoreboard: 'SCOREBOARD',
@@ -339,14 +401,20 @@
       if (currentPhase === 'lobby' || currentPhase === 'main_slide') {
         renderTeamSlots();
       }
+      if (currentPhase === 'rules') {
+        renderRules();
+      }
     }
 
     function updateLanguageUI() {
+      const maxTeams = gameConfig?.maxTeams || 4;
       document.getElementById('subtitle-lobby').innerHTML = t('lobbySubtitle');
       document.getElementById('label-qr').textContent = t('qrScan');
       document.getElementById('label-ip').textContent = t('chooseIp');
-      document.getElementById('label-teams').innerHTML = `${t('teamsLabel')} (<span id="team-count">${teams.length}</span>/4)`;
+      document.getElementById('label-teams').innerHTML = `${t('teamsLabel')} (<span id="team-count">${teams.length}</span>/${maxTeams})`;
       document.getElementById('btn-start-text').textContent = t('startGame');
+      document.getElementById('rules-title').textContent = t('rulesTitle');
+      document.getElementById('btn-rules-start-text').textContent = t('rulesStart');
       document.getElementById('label-result-title').textContent = t('resultTitle');
       document.getElementById('label-scoreboard-title').textContent = t('scoreboardTitle');
       document.getElementById('label-elimination-title').textContent = t('eliminationTitle');
@@ -420,6 +488,7 @@
       const phaseLabels = {
         main_slide: t('phaseMainSlide'),
         lobby: t('phaseLobby'),
+        rules: t('phaseRules'),
         question: t('phaseQuestion'),
         reveal: t('phaseReveal'),
         scoreboard: t('phaseScoreboard'),
@@ -523,12 +592,14 @@
     socket.on('team_update', (data) => {
       teams = data.teams;
       renderTeamSlots();
+      if (currentPhase === 'rules') renderRules();
     });
 
     function renderTeamSlots() {
       const slotsContainer = document.getElementById('team-slots');
       const slots = [];
-      for (let i = 0; i < 4; i++) {
+      const maxTeams = gameConfig?.maxTeams || 4;
+      for (let i = 0; i < maxTeams; i++) {
         if (i < teams.length) {
           const t = teams[i];
           slots.push(`
@@ -546,8 +617,41 @@
       btnStart.disabled = teams.length < 1;
     }
 
+    function renderRules() {
+      const rounds = gameConfig?.rounds || [];
+      const normalRounds = rounds.filter(r => Number(r.round) < 99);
+      const totalRounds = normalRounds.length;
+      const totalQuestions = normalRounds.reduce((sum, r) => sum + Number(r.questions || 0), 0);
+
+      document.getElementById('rules-summary').textContent = t('rulesSummary', {
+        rounds: totalRounds,
+        questions: totalQuestions
+      });
+
+      const lines = normalRounds
+        .slice(0, 3)
+        .map(r => t('rulesRoundLine', { round: r.round, advance: r.advanceCount }));
+
+      document.getElementById('rules-points').innerHTML = (lines.length ? lines : [t('rulesFallbackLine')])
+        .map(line => `<li>${line}</li>`)
+        .join('');
+
+      const chips = (teams || []).map((team, index) => `
+        <div class="rules-team-chip" style="border-color:${team.color};animation-delay:${(index * 0.12).toFixed(2)}s">
+          <span class="icon">${team.icon}</span>
+          <span class="name">${team.name}</span>
+        </div>
+      `).join('');
+      document.getElementById('rules-animation').innerHTML = chips || '<div style="color:var(--text-muted)">...</div>';
+    }
+
     // ── Start Game ──────────────────────────────
     btnStart.addEventListener('click', () => {
+      soundEngine.init();
+      socket.emit('host_action', { action: 'show_rules' });
+    });
+
+    btnRulesStart.addEventListener('click', () => {
       soundEngine.init();
       socket.emit('host_action', { action: 'start_game' });
     });
@@ -563,6 +667,9 @@
           break;
         case 'lobby':
           renderTeamSlots();
+          break;
+        case 'rules':
+          renderRules();
           break;
         case 'question':
           renderQuestion(state);

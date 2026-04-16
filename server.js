@@ -259,6 +259,13 @@ function showMainSlide() {
   console.log('[Phase] → MAIN_SLIDE');
 }
 
+function showRules() {
+  gameState.phase = 'rules';
+  broadcastGameState();
+  saveState();
+  console.log('[Phase] → RULES');
+}
+
 function startQuestion() {
   const roundConfig = config.rounds[gameState.currentRound];
   if (!roundConfig) {
@@ -937,11 +944,21 @@ io.on('connection', (socket) => {
           socket.emit('host_error', { message: `Cần ít nhất ${config.minTeamsToStart} đội để bắt đầu.` });
           return;
         }
+        if (gameState.phase !== 'rules' && gameState.phase !== 'lobby') {
+          socket.emit('host_error', { message: 'Chỉ có thể bắt đầu game từ Lobby hoặc màn luật chơi.' });
+          return;
+        }
         gameState.currentRound = 0;
         gameState.currentQuestionIndex = 0;
         gameState.tieBreak = null;
         gameState.teams.forEach(t => { t.score = 0; t.roundScore = 0; t.eliminated = false; });
         startQuestion();
+        break;
+
+      case 'show_rules':
+        if (gameState.phase === 'lobby') {
+          showRules();
+        }
         break;
 
       case 'pause':
