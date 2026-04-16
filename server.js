@@ -83,7 +83,8 @@ let gameState = {
   paused: false,
   answersSubmitted: {},
   hostSocketId: null,
-  slideIndex: 0
+  slideIndex: 0,
+  tieBreak: null
 };
 
 let timerInterval = null;
@@ -118,6 +119,24 @@ function saveHistory(matchData) {
 function getQuestionsForRound(roundNumber) {
   const round = questionsData.rounds.find(r => r.round === roundNumber);
   return round ? round.questions : [];
+}
+
+function getAllTieBreakQuestions() {
+  return questionsData.rounds
+    .filter(r => r.round >= 99)
+    .flatMap(r => r.questions.map(question => ({
+      ...question,
+      __tieBreakKey: `round:${r.round}:question:${question.id || question.text}`
+    })));
+}
+
+function getUnusedTieBreakQuestion() {
+  const allTieBreakQuestions = getAllTieBreakQuestions();
+  const usedKeys = new Set(gameState.tieBreak?.usedQuestionKeys || []);
+  const candidates = allTieBreakQuestions.filter(q => !usedKeys.has(q.__tieBreakKey));
+  if (candidates.length === 0) return null;
+  const randomIndex = Math.floor(Math.random() * candidates.length);
+  return candidates[randomIndex];
 }
 
 function shuffleAnswers(question) {
@@ -215,6 +234,11 @@ function buildGameStatePayload(extra = {}) {
     currentQuestionIndex: gameState.currentQuestionIndex,
     roundConfig: config.rounds[gameState.currentRound],
     teams: gameState.teams.map(teamPublicData),
+    tieBreak: gameState.tieBreak?.active ? {
+      active: true,
+      participants: gameState.tieBreak.participants,
+      scores: gameState.tieBreak.scores
+    } : { active: false },
     slideImages: getSlideImages(),
     ...(phaseSlideImage ? { slideImage: phaseSlideImage } : {}),
     ...extra
@@ -279,7 +303,10 @@ function endQuestion() {
   gameState.phase = 'reveal';
 
   const shuffled = gameState.shuffledAnswers;
-  const activeTeams = gameState.teams.filter(t => !t.eliminated);
+  const tieBreak = gameState.tieBreak;
+  const activeTeams = tieBreak?.active
+    ? gameState.teams.filter(t => tieBreak.participants.includes(t.id))
+    : gameState.teams.filter(t => !t.eliminated);
 
   // Calculate scores for all active teams
   activeTeams.forEach(team => {
@@ -292,8 +319,12 @@ function endQuestion() {
       scoreGained = calculateScore(submission.timeLeft, gameState.totalTime);
     }
 
-    team.score += scoreGained;
-    team.roundScore += scoreGained;
+    if (tieBreak?.active) {
+      tieBreak.scores[team.id] = (tieBreak.scores[team.id] || 0) + scoreGained;
+    } else {
+      team.score += scoreGained;
+      team.roundScore += scoreGained;
+    }
 
     // Personal result → sent to each client ONLY NOW (after timer ends)
     if (team.socketId) {
@@ -335,7 +366,12 @@ function endQuestion() {
       questionNumber: gameState.currentQuestionIndex + 1,
       totalQuestions: questions.length,
       roundNumber: roundNum
-    }
+    },
+    tieBreak: tieBreak?.active ? {
+      active: true,
+      participants: tieBreak.participants,
+      scores: tieBreak.scores
+    } : { active: false }
   });
 
   io.emit('answer_stats', answerStats);
@@ -346,13 +382,37 @@ function endQuestion() {
 
 function showScoreboard() {
   gameState.phase = 'scoreboard';
-  const sortedTeams = [...gameState.teams].sort((a, b) => b.score - a.score);
-  broadcastGameState({ rankedTeams: sortedTeams.map(teamPublicData) });
+  if (gameState.tieBreak?.active) {
+    const participantSet = new Set(gameState.tieBreak.participants);
+    const sortedParticipants = gameState.teams
+      .filter(t => participantSet.has(t.id))
+      .sort((a, b) => (gameState.tieBreak.scores[b.id] || 0) - (gameState.tieBreak.scores[a.id] || 0))
+      .map(team => ({
+        ...teamPublicData(team),
+        tieBreakScore: gameState.tieBreak.scores[team.id] || 0
+      }));
+    broadcastGameState({
+      rankedTeams: sortedParticipants,
+      tieBreak: {
+        active: true,
+        participants: gameState.tieBreak.participants,
+        scores: gameState.tieBreak.scores
+      }
+    });
+  } else {
+    const sortedTeams = [...gameState.teams].sort((a, b) => b.score - a.score);
+    broadcastGameState({ rankedTeams: sortedTeams.map(teamPublicData) });
+  }
   saveState();
   console.log('[Phase] → SCOREBOARD');
 }
 
 function showSlide() {
+  if (gameState.tieBreak?.active) {
+    nextQuestion();
+    return;
+  }
+
   if (!hasQuestionSlideImage(gameState.currentQuestion)) {
     nextQuestion();
     return;
@@ -366,6 +426,11 @@ function showSlide() {
 }
 
 function nextQuestion() {
+  if (gameState.tieBreak?.active) {
+    continueTieBreak();
+    return;
+  }
+
   gameState.currentQuestionIndex++;
   const roundConfig = config.rounds[gameState.currentRound];
   const questions = getQuestionsForRound(roundConfig.round);
@@ -394,6 +459,12 @@ function endRound() {
 
   const advanceCount = roundConfig.advanceCount;
 
+  const tieBreakPlan = buildTieBreakPlan(activeTeams, advanceCount);
+  if (tieBreakPlan) {
+    startTieBreak(tieBreakPlan);
+    return;
+  }
+
   if (activeTeams.length > advanceCount) {
     const teamsToEliminate = activeTeams.slice(advanceCount);
     teamsToEliminate.forEach(team => {
@@ -413,6 +484,191 @@ function endRound() {
   });
   saveState();
   console.log('[Phase] → ELIMINATION');
+}
+
+function buildTieBreakPlan(activeTeams, advanceCount) {
+  if (activeTeams.length <= advanceCount || advanceCount <= 0) return null;
+
+  const cutoffScore = activeTeams[advanceCount - 1]?.score;
+  if (typeof cutoffScore !== 'number') return null;
+
+  const lockedAdvancers = activeTeams.filter(t => t.score > cutoffScore).map(t => t.id);
+  const tieParticipants = activeTeams.filter(t => t.score === cutoffScore).map(t => t.id);
+  const autoEliminated = activeTeams.filter(t => t.score < cutoffScore).map(t => t.id);
+  const slotsLeft = advanceCount - lockedAdvancers.length;
+
+  if (slotsLeft <= 0) return null;
+  if (tieParticipants.length <= slotsLeft) return null;
+
+  return {
+    active: true,
+    roundIndex: gameState.currentRound,
+    roundNumber: config.rounds[gameState.currentRound]?.round,
+    lockedAdvancers,
+    participants: tieParticipants,
+    autoEliminated,
+    slotsLeft,
+    scores: Object.fromEntries(tieParticipants.map(id => [id, 0])),
+    usedQuestionKeys: gameState.tieBreak?.usedQuestionKeys || []
+  };
+}
+
+function startTieBreak(tieBreakPlan) {
+  gameState.tieBreak = tieBreakPlan;
+  console.log(`[TieBreak] Start with ${tieBreakPlan.participants.length} teams for ${tieBreakPlan.slotsLeft} slots`);
+  startTieBreakQuestion();
+}
+
+function startTieBreakQuestion() {
+  const tieBreakQuestion = getUnusedTieBreakQuestion();
+  if (!tieBreakQuestion) {
+    console.log('[TieBreak] No unused tie-break questions available, falling back to score order');
+    finalizeTieBreakByCurrentOrder();
+    return;
+  }
+
+  gameState.tieBreak.usedQuestionKeys.push(tieBreakQuestion.__tieBreakKey);
+  const shuffled = shuffleAnswers(tieBreakQuestion);
+
+  gameState.phase = 'question';
+  gameState.currentQuestion = tieBreakQuestion;
+  gameState.shuffledAnswers = shuffled;
+  gameState.totalTime = shuffled.timeLimit;
+  gameState.timeLeft = shuffled.timeLimit;
+  gameState.paused = false;
+  gameState.answersSubmitted = {};
+
+  const participants = gameState.tieBreak.participants;
+  broadcastGameState({
+    question: {
+      questionText: shuffled.text,
+      answers: shuffled.answers,
+      questionNumber: 1,
+      totalQuestions: 1,
+      roundNumber: gameState.tieBreak.roundNumber,
+      roundName: 'Tie Break',
+      timeLimit: shuffled.timeLimit,
+      totalTime: shuffled.timeLimit
+    },
+    tieBreak: {
+      active: true,
+      participants
+    }
+  });
+  saveState();
+  startTimer();
+  console.log(`[Phase] → QUESTION (TIE BREAK, participants: ${participants.length})`);
+}
+
+function continueTieBreak() {
+  const tieBreak = gameState.tieBreak;
+  if (!tieBreak?.active) return;
+
+  if (tieBreak.slotsLeft <= 0) {
+    const advancing = new Set(tieBreak.lockedAdvancers);
+    const activeTeamIds = new Set(gameState.teams.filter(t => !t.eliminated).map(t => t.id));
+    const eliminated = [...activeTeamIds].filter(teamId => !advancing.has(teamId));
+    eliminated.forEach(teamId => {
+      const team = gameState.teams.find(t => t.id === teamId);
+      if (!team) return;
+      team.eliminated = true;
+      if (team.socketId) {
+        io.to(team.socketId).emit('eliminated', {
+          message: 'Cảm ơn bạn đã tham gia! Đội bạn đã bị loại.'
+        });
+      }
+    });
+    if (eliminated.length > 0) {
+      io.emit('play_sound', { sound: 'eliminated' });
+    }
+    gameState.phase = 'elimination';
+    tieBreak.active = false;
+    broadcastGameState({
+      tieBreak: { active: false },
+      eliminatedTeams: gameState.teams.filter(t => t.eliminated).map(t => t.id),
+      advancingTeams: gameState.teams.filter(t => !t.eliminated).map(t => t.id)
+    });
+    saveState();
+    console.log('[Phase] → ELIMINATION (tie-break locked)');
+    return;
+  }
+
+  const participantTeams = gameState.teams
+    .filter(t => tieBreak.participants.includes(t.id))
+    .sort((a, b) => (tieBreak.scores[b.id] || 0) - (tieBreak.scores[a.id] || 0));
+
+  const cutoffScore = tieBreak.scores[participantTeams[tieBreak.slotsLeft - 1]?.id] ?? null;
+  if (cutoffScore === null) {
+    finalizeTieBreakByCurrentOrder();
+    return;
+  }
+
+  const fixedWinners = participantTeams
+    .filter(t => (tieBreak.scores[t.id] || 0) > cutoffScore)
+    .map(t => t.id);
+  const tiedAtCutoff = participantTeams
+    .filter(t => (tieBreak.scores[t.id] || 0) === cutoffScore)
+    .map(t => t.id);
+  const losersBelowCutoff = participantTeams
+    .filter(t => (tieBreak.scores[t.id] || 0) < cutoffScore)
+    .map(t => t.id);
+
+  const slotsLeftAfterFixed = tieBreak.slotsLeft - fixedWinners.length;
+
+  // Tie persists at cutoff → ask another tie-break question with narrowed participant group.
+  if (tiedAtCutoff.length > slotsLeftAfterFixed) {
+    tieBreak.lockedAdvancers = [...new Set([...tieBreak.lockedAdvancers, ...fixedWinners])];
+    tieBreak.slotsLeft = slotsLeftAfterFixed;
+    tieBreak.participants = tiedAtCutoff;
+    tieBreak.autoEliminated = [...new Set([...tieBreak.autoEliminated, ...losersBelowCutoff])];
+    tieBreak.participants.forEach(id => {
+      if (typeof tieBreak.scores[id] !== 'number') tieBreak.scores[id] = 0;
+    });
+    startTieBreakQuestion();
+    return;
+  }
+
+  const selectedFromTiedGroup = tiedAtCutoff.slice(0, slotsLeftAfterFixed);
+  const advancing = [...new Set([...tieBreak.lockedAdvancers, ...fixedWinners, ...selectedFromTiedGroup])];
+  const activeTeamIds = new Set(gameState.teams.filter(t => !t.eliminated).map(t => t.id));
+
+  const eliminated = [...activeTeamIds].filter(teamId => !advancing.includes(teamId));
+  eliminated.forEach(teamId => {
+    const team = gameState.teams.find(t => t.id === teamId);
+    if (!team) return;
+    team.eliminated = true;
+    if (team.socketId) {
+      io.to(team.socketId).emit('eliminated', {
+        message: 'Cảm ơn bạn đã tham gia! Đội bạn đã bị loại.'
+      });
+    }
+  });
+  if (eliminated.length > 0) {
+    io.emit('play_sound', { sound: 'eliminated' });
+  }
+
+  gameState.phase = 'elimination';
+  gameState.tieBreak.active = false;
+
+  broadcastGameState({
+    tieBreak: { active: false },
+    eliminatedTeams: gameState.teams.filter(t => t.eliminated).map(t => t.id),
+    advancingTeams: gameState.teams.filter(t => !t.eliminated).map(t => t.id)
+  });
+  saveState();
+  console.log('[Phase] → ELIMINATION (after tie-break)');
+}
+
+function finalizeTieBreakByCurrentOrder() {
+  const tieBreak = gameState.tieBreak;
+  if (!tieBreak?.active) return;
+  const participantTeams = gameState.teams
+    .filter(t => tieBreak.participants.includes(t.id))
+    .sort((a, b) => (tieBreak.scores[b.id] || 0) - (tieBreak.scores[a.id] || 0));
+  const selected = participantTeams.slice(0, tieBreak.slotsLeft).map(t => t.id);
+  tieBreak.lockedAdvancers = [...new Set([...tieBreak.lockedAdvancers, ...selected])];
+  tieBreak.slotsLeft = 0;
+  continueTieBreak();
 }
 
 function nextRound() {
@@ -479,7 +735,8 @@ function goToLobby() {
     paused: false,
     answersSubmitted: {},
     hostSocketId: hostSid,
-    slideIndex: 0
+    slideIndex: 0,
+    tieBreak: null
   };
   io.emit('game_reset');
   broadcastGameState();
@@ -502,7 +759,8 @@ function resetGame() {
     paused: false,
     answersSubmitted: {},
     hostSocketId: hostSid,
-    slideIndex: 0
+    slideIndex: 0,
+    tieBreak: null
   };
   io.emit('game_reset');
   broadcastGameState();
@@ -624,6 +882,7 @@ io.on('connection', (socket) => {
 
     const team = gameState.teams.find(t => t.socketId === socket.id);
     if (!team || team.eliminated) return;
+    if (gameState.tieBreak?.active && !gameState.tieBreak.participants.includes(team.id)) return;
 
     // Only allow one submission per question
     if (gameState.answersSubmitted[team.id]) return;
@@ -637,7 +896,9 @@ io.on('connection', (socket) => {
     socket.emit('answer_received', { answer });
 
     // Notify all about submission status (do NOT reveal result)
-    const activeTeams = gameState.teams.filter(t => !t.eliminated);
+    const activeTeams = gameState.tieBreak?.active
+      ? gameState.teams.filter(t => gameState.tieBreak.participants.includes(t.id))
+      : gameState.teams.filter(t => !t.eliminated);
     const submittedCount = Object.keys(gameState.answersSubmitted).length;
 
     io.emit('submission_status', {
@@ -672,6 +933,7 @@ io.on('connection', (socket) => {
         }
         gameState.currentRound = 0;
         gameState.currentQuestionIndex = 0;
+        gameState.tieBreak = null;
         gameState.teams.forEach(t => { t.score = 0; t.roundScore = 0; t.eliminated = false; });
         startQuestion();
         break;
