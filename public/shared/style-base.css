@@ -758,7 +758,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Slide Image Fullscreen ────────────────────── */
 .slide-fullscreen {
-  background: #000;
+  background: #fff;
 }
 
 .slide-fullscreen img {

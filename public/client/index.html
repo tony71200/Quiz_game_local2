@@ -62,6 +62,33 @@
     }
     .eliminated-screen { text-align: center; padding: 40px 20px; }
     .eliminated-screen .skull { font-size: 5rem; margin-bottom: 16px; }
+    .rules-summary { color: var(--text-secondary); margin-bottom: 12px; text-align: center; }
+    .rules-points { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .rules-points li {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border-left: 4px solid rgba(33,150,243,0.65);
+    }
+    .rules-team-icons {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .rules-team-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255,255,255,0.2);
+      font-size: 1.2rem;
+      animation: clientRuleFloat 2.1s ease-in-out infinite;
+    }
+    @keyframes clientRuleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
   </style>
 </head>
 <body>
@@ -117,6 +144,16 @@
           <div class="mt-2" style="color:var(--text-muted);font-size:0.85rem;">
             <span id="lobby-team-count">0</span> <span id="lobby-team-count-suffix">đội đã tham gia</span>
           </div>
+        </div>
+      </div>
+
+      <!-- ═══════ RULES SCREEN ═══════ -->
+      <div id="screen-rules" style="display:none">
+        <div class="glass-card">
+          <h2 id="rules-title" class="text-gradient" style="text-align:center;margin-bottom:8px;">📘 Luật chơi</h2>
+          <p id="rules-summary" class="rules-summary"></p>
+          <ul id="rules-points" class="rules-points"></ul>
+          <div id="rules-team-icons" class="rules-team-icons"></div>
         </div>
       </div>
 
@@ -216,6 +253,7 @@
     // ── State ───────────────────────────────────
     const socket = io();
     let currentLang = localStorage.getItem('quiz_lang') || 'vn';
+    let gameConfig = null;
     let myTeam = null;
     let myTeamId = null;
     let myTotalScore = 0;
@@ -234,6 +272,10 @@
         teamNamePlaceholder: 'Nhập tên đội...',
         joinBtn: '🚀 Tham gia',
         waitingHost: 'Chờ host bắt đầu trò chơi',
+        rulesTitle: '📘 Luật chơi',
+        rulesSummary: 'Các đội sẽ trải qua {rounds} vòng với tổng {questions} câu hỏi.',
+        rulesRoundLine: 'Vòng {round}: chọn ra {advance} đội đi tiếp.',
+        rulesFallbackLine: 'Đi tiếp theo thứ hạng điểm sau mỗi vòng.',
         teamsJoinedSuffix: 'đội đã tham gia',
         submittedTitle: 'Đã gửi câu trả lời',
         submittedSubtitle: 'Chờ hết thời gian...',
@@ -261,6 +303,10 @@
         teamNamePlaceholder: 'Enter team name...',
         joinBtn: '🚀 Join',
         waitingHost: 'Waiting for host to start',
+        rulesTitle: '📘 Rules',
+        rulesSummary: 'Teams will play {rounds} rounds with {questions} total questions.',
+        rulesRoundLine: 'Round {round}: advance top {advance} team(s).',
+        rulesFallbackLine: 'Advancement is based on score ranking after each round.',
         teamsJoinedSuffix: 'teams joined',
         submittedTitle: 'Answer submitted',
         submittedSubtitle: 'Waiting for timer to end...',
@@ -283,8 +329,9 @@
       }
     };
 
-    function t(key) {
-      return i18n[currentLang][key] || i18n.vn[key] || key;
+    function t(key, vars = {}) {
+      const raw = i18n[currentLang][key] || i18n.vn[key] || key;
+      return Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, v), raw);
     }
 
     function setLanguage(lang) {
@@ -303,6 +350,7 @@
       document.getElementById('team-name-input').placeholder = t('teamNamePlaceholder');
       document.getElementById('btn-join-text').textContent = t('joinBtn');
       document.getElementById('lobby-wait-text').textContent = t('waitingHost');
+      document.getElementById('rules-title').textContent = t('rulesTitle');
       document.getElementById('connected-status').textContent = t('connected');
       document.getElementById('lobby-team-count-suffix').textContent = t('teamsJoinedSuffix');
       document.getElementById('wait-submitted-title').textContent = t('submittedTitle');
@@ -316,11 +364,12 @@
       document.getElementById('final-score-label').textContent = t('finalScoreLabel');
       document.getElementById('thankyou-title').textContent = t('thankTitle');
       document.getElementById('thankyou-subtitle').textContent = t('thankSubtitle');
+      renderRulesSummary();
     }
 
     // ── Screen Management ───────────────────────
     const screens = [
-      'screen-join', 'screen-lobby', 'screen-question',
+      'screen-join', 'screen-lobby', 'screen-rules', 'screen-question',
       'screen-wait', 'screen-result', 'screen-scoreboard-wait',
       'screen-eliminated', 'screen-final', 'screen-thankyou'
     ];
@@ -335,6 +384,7 @@
 
     // ── Init ────────────────────────────────────
     socket.on('init', (data) => {
+      gameConfig = data.config || gameConfig;
       currentIcons = data.config?.icons || ['🐉','🦁','🐺','🦅','🦊','🐻','🐯','🦈','🦉','🔥'];
       renderIconPicker();
     });
@@ -401,7 +451,35 @@
     socket.on('team_update', (data) => {
       const countEl = document.getElementById('lobby-team-count');
       if (countEl) countEl.textContent = data.teams.length;
+      renderRulesIcons(data.teams || []);
     });
+
+    function renderRulesSummary() {
+      const rounds = gameConfig?.rounds || [];
+      const normalRounds = rounds.filter(r => Number(r.round) < 99);
+      const totalRounds = normalRounds.length;
+      const totalQuestions = normalRounds.reduce((sum, r) => sum + Number(r.questions || 0), 0);
+
+      document.getElementById('rules-summary').textContent = t('rulesSummary', {
+        rounds: totalRounds,
+        questions: totalQuestions
+      });
+
+      const lines = normalRounds.slice(0, 3).map(r => t('rulesRoundLine', {
+        round: r.round,
+        advance: r.advanceCount
+      }));
+      document.getElementById('rules-points').innerHTML = (lines.length ? lines : [t('rulesFallbackLine')])
+        .map(line => `<li>${line}</li>`)
+        .join('');
+    }
+
+    function renderRulesIcons(teamList = []) {
+      const icons = teamList.map((team, index) => `
+        <div class="rules-team-icon" style="animation-delay:${(index * 0.1).toFixed(2)}s">${team.icon}</div>
+      `).join('');
+      document.getElementById('rules-team-icons').innerHTML = icons;
+    }
 
     // ── Game State Handler ──────────────────────
     socket.on('game_state', (state) => {
@@ -412,6 +490,11 @@
         case 'main_slide':
         case 'lobby':
           // Clients stay on lobby/join screen
+          break;
+        case 'rules':
+          renderRulesSummary();
+          renderRulesIcons(state.teams || []);
+          showScreen('screen-rules');
           break;
 
         case 'question':
